@@ -13,6 +13,7 @@ import Estoque from "./pages/Estoque";
 import LandingPage from "./pages/LandingPage";
 import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
+import AdminLogin from "./pages/admin/Login";
 import ClienteLogin from "./pages/cliente/Login";
 import ClientePortal from "./pages/cliente/Portal";
 import NotFound from "./pages/NotFound";
@@ -23,6 +24,13 @@ function ProtectedClientRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Carregando...</div>;
   if (!user) return <Navigate to="/cliente/login" replace />;
+  return <>{children}</>;
+}
+
+function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Carregando...</div>;
+  if (!user) return <Navigate to="/admin/login" replace />;
   return <>{children}</>;
 }
 
@@ -41,14 +49,17 @@ const App = () => (
             <Route path="/cliente/login" element={<ClienteLogin />} />
             <Route path="/cliente" element={<ProtectedClientRoute><ClientePortal /></ProtectedClientRoute>} />
 
-            {/* Admin routes */}
-            <Route path="/" element={<AppLayout><Index /></AppLayout>} />
-            <Route path="/agendamento" element={<AppLayout><Agendamento /></AppLayout>} />
-            <Route path="/assinaturas" element={<AppLayout><Assinaturas /></AppLayout>} />
-            <Route path="/financeiro" element={<AppLayout><Financeiro /></AppLayout>} />
-            <Route path="/estoque" element={<AppLayout><Estoque /></AppLayout>} />
-            <Route path="/admin/landing" element={<AppLayout><AdminLanding /></AppLayout>} />
-            <Route path="/admin/banner-ia" element={<AppLayout><AdminBannerAI /></AppLayout>} />
+            {/* Admin login */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+
+            {/* Protected admin routes */}
+            <Route path="/" element={<ProtectedAdminRoute><AppLayout><Index /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/agendamento" element={<ProtectedAdminRoute><AppLayout><Agendamento /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/assinaturas" element={<ProtectedAdminRoute><AppLayout><Assinaturas /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/financeiro" element={<ProtectedAdminRoute><AppLayout><Financeiro /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/estoque" element={<ProtectedAdminRoute><AppLayout><Estoque /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/landing" element={<ProtectedAdminRoute><AppLayout><AdminLanding /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/banner-ia" element={<ProtectedAdminRoute><AppLayout><AdminBannerAI /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
