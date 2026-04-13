@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scissors, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,11 +113,6 @@ export default function ClienteLogin() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          <Link to="/" className="hover:text-primary transition-colors">
-            ← Área administrativa
-          </Link>
-        </p>
       </motion.div>
     </div>
   );
