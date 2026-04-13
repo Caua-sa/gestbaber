@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_settings: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          key: string
+          section: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          key: string
+          section: string
+          updated_at?: string
+          value?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          key?: string
+          section?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           active: boolean
