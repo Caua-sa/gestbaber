@@ -10,6 +10,9 @@ import Agendamento from "./pages/Agendamento";
 import Assinaturas from "./pages/Assinaturas";
 import Financeiro from "./pages/Financeiro";
 import Estoque from "./pages/Estoque";
+import LandingPage from "./pages/LandingPage";
+import AdminLanding from "./pages/admin/AdminLanding";
+import AdminBannerAI from "./pages/admin/AdminBannerAI";
 import ClienteLogin from "./pages/cliente/Login";
 import ClientePortal from "./pages/cliente/Portal";
 import NotFound from "./pages/NotFound";
@@ -31,6 +34,9 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public landing page */}
+            <Route path="/site" element={<LandingPage />} />
+
             {/* Client portal routes */}
             <Route path="/cliente/login" element={<ClienteLogin />} />
             <Route path="/cliente" element={<ProtectedClientRoute><ClientePortal /></ProtectedClientRoute>} />
@@ -41,6 +47,8 @@ const App = () => (
             <Route path="/assinaturas" element={<AppLayout><Assinaturas /></AppLayout>} />
             <Route path="/financeiro" element={<AppLayout><Financeiro /></AppLayout>} />
             <Route path="/estoque" element={<AppLayout><Estoque /></AppLayout>} />
+            <Route path="/admin/landing" element={<AppLayout><AdminLanding /></AppLayout>} />
+            <Route path="/admin/banner-ia" element={<AppLayout><AdminBannerAI /></AppLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
