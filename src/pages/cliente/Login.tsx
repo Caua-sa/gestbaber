@@ -113,11 +113,6 @@ export default function ClienteLogin() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          <Link to="/" className="hover:text-primary transition-colors">
-            ← Área administrativa
-          </Link>
-        </p>
       </motion.div>
     </div>
   );
