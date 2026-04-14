@@ -28,12 +28,17 @@ export default function Agendamento() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
   const fetchAppointments = async () => {
-    const { data } = await supabase
+    const { data: appts } = await supabase
       .from("appointments")
-      .select("*, profiles(full_name)")
+      .select("*")
       .eq("appointment_date", selectedDate)
       .order("appointment_time");
-    if (data) setAppointments(data as any);
+    if (!appts) return;
+    // Fetch profile names for each user_id
+    const userIds = [...new Set(appts.map(a => a.user_id))];
+    const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+    setAppointments(appts.map(a => ({ ...a, profiles: { full_name: profileMap.get(a.user_id) || "Cliente" } })));
   };
 
   useEffect(() => { fetchAppointments(); }, [selectedDate]);
