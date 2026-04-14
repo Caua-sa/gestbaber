@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Agendamento from "./pages/Agendamento";
@@ -29,8 +30,11 @@ function ProtectedClientRoute({ children }: { children: React.ReactNode }) {
 
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Carregando...</div>;
+  const { isAdmin, loading: roleLoading } = useUserRole();
+
+  if (loading || roleLoading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Carregando...</div>;
   if (!user) return <Navigate to="/admin/login" replace />;
+  if (!isAdmin) return <div className="min-h-screen bg-background flex items-center justify-center text-destructive font-display text-xl">Acesso negado — somente administradores.</div>;
   return <>{children}</>;
 }
 
