@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Crown, Calendar, LogOut, User } from "lucide-react";
+import { Crown, Calendar, LogOut, User, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ClientePlanos } from "@/components/cliente/ClientePlanos";
 import { ClienteAgendamento } from "@/components/cliente/ClienteAgendamento";
 import { ClienteMeusAgendamentos } from "@/components/cliente/ClienteMeusAgendamentos";
+import { ClienteLoja } from "@/components/cliente/ClienteLoja";
 
-type Tab = "planos" | "agendar" | "meus-agendamentos";
+type Tab = "planos" | "agendar" | "meus-agendamentos" | "loja";
 
 export default function ClientePortal() {
   const { user, signOut } = useAuth();
-  const [tab, setTab] = useState<Tab>("planos");
+  const [tab, setTab] = useState<Tab>("loja");
 
   const tabs = [
+    { id: "loja" as Tab, label: "Loja", icon: ShoppingBag },
     { id: "planos" as Tab, label: "Planos", icon: Crown },
     { id: "agendar" as Tab, label: "Agendar", icon: Calendar },
     { id: "meus-agendamentos" as Tab, label: "Meus Agendamentos", icon: User },
@@ -53,6 +55,7 @@ export default function ClientePortal() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          {tab === "loja" && <ClienteLoja />}
           {tab === "planos" && <ClientePlanos />}
           {tab === "agendar" && <ClienteAgendamento />}
           {tab === "meus-agendamentos" && <ClienteMeusAgendamentos />}
