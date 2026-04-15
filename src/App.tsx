@@ -11,6 +11,7 @@ import Agendamento from "./pages/Agendamento";
 import Assinaturas from "./pages/Assinaturas";
 import Financeiro from "./pages/Financeiro";
 import Estoque from "./pages/Estoque";
+import Vendas from "./pages/Vendas";
 import LandingPage from "./pages/LandingPage";
 import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/assinaturas" element={<ProtectedAdminRoute><AppLayout><Assinaturas /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/financeiro" element={<ProtectedAdminRoute><AppLayout><Financeiro /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/estoque" element={<ProtectedAdminRoute><AppLayout><Estoque /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/vendas" element={<ProtectedAdminRoute><AppLayout><Vendas /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/landing" element={<ProtectedAdminRoute><AppLayout><AdminLanding /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/banner-ia" element={<ProtectedAdminRoute><AppLayout><AdminBannerAI /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><AppLayout><AdminUsuarios /></AppLayout></ProtectedAdminRoute>} />
