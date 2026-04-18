@@ -80,10 +80,92 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_payments: {
+        Row: {
+          admin_user_id: string
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          init_point: string | null
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          payer_user_id: string | null
+          raw: Json | null
+          reference_id: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          payer_user_id?: string | null
+          raw?: Json | null
+          reference_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          init_point?: string | null
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          payer_user_id?: string | null
+          raw?: Json | null
+          reference_id?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mp_settings: {
+        Row: {
+          access_token: string
+          active: boolean
+          created_at: string
+          id: string
+          public_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          public_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          active?: boolean
+          created_at?: string
+          id?: string
+          public_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
           id: string
+          mp_payment_id: string | null
           product_id: string
           quantity: number
           status: string
@@ -94,6 +176,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          mp_payment_id?: string | null
           product_id: string
           quantity?: number
           status?: string
@@ -104,6 +187,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          mp_payment_id?: string | null
           product_id?: string
           quantity?: number
           status?: string
