@@ -51,7 +51,7 @@ export default function Assinaturas() {
     if (data) setSubscribers(data);
   };
 
-  useEffect(() => { fetchPlans(); fetchSubscribers(); }, []);
+  useEffect(() => { if (user) { fetchPlans(); fetchSubscribers(); } }, [user]);
 
   const openCreate = () => {
     setEditingPlan(null);

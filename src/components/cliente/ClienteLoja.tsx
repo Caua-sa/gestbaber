@@ -12,6 +12,7 @@ interface Product {
   category: string;
   sell_price: number;
   stock: number;
+  owner_id: string | null;
 }
 
 interface CartItem {
@@ -27,8 +28,8 @@ export function ClienteLoja() {
   const [ordering, setOrdering] = useState(false);
 
   useEffect(() => {
-    supabase.from("products").select("id, name, category, sell_price, stock").eq("active", true).gt("stock", 0).order("name")
-      .then(({ data }) => { if (data) setProducts(data); setLoading(false); });
+    supabase.from("products").select("id, name, category, sell_price, stock, owner_id").eq("active", true).gt("stock", 0).order("name")
+      .then(({ data }) => { if (data) setProducts(data as Product[]); setLoading(false); });
   }, []);
 
   const addToCart = (product: Product) => {
@@ -58,6 +59,7 @@ export function ClienteLoja() {
         quantity: c.qty,
         unit_price: Number(c.product.sell_price),
         total: c.qty * Number(c.product.sell_price),
+        owner_id: c.product.owner_id,
       }));
       const { error } = await supabase.from("orders").insert(orders);
       if (error) throw error;
