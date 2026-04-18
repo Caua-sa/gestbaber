@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +27,7 @@ const siteItems = [
   { title: "Editar Site", url: "/admin/landing", icon: Globe },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Usuários", url: "/admin/usuarios", icon: UserCog },
+  { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },
 ];
 
 export function AppSidebar() {

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Smartphone, Search } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Smartphone, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -38,9 +40,11 @@ const paymentMethods = [
   { value: "dinheiro", label: "Dinheiro", icon: Banknote },
   { value: "cartao", label: "Cartão", icon: CreditCard },
   { value: "pix", label: "PIX", icon: Smartphone },
+  { value: "mercadopago", label: "Merc. Pago", icon: CreditCard },
 ];
 
 export default function Vendas() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
@@ -50,6 +54,8 @@ export default function Vendas() {
   const [processing, setProcessing] = useState(false);
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [mpLink, setMpLink] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     const { data } = await supabase.from("products").select("*").eq("active", true).order("name");
@@ -122,19 +128,19 @@ export default function Vendas() {
     if (cart.length === 0) return;
     setProcessing(true);
     try {
-      // 1. Create transaction (cash flow entry)
       const itemNames = cart.map(c => `${c.quantity}x ${c.product.name}`).join(", ");
+      const productIds = cart.map(c => c.product.id).join(",");
+
       const { error: txError } = await supabase.from("transactions").insert({
         description: `Venda: ${itemNames}`,
         type: "entrada",
         value: total,
         category: "Venda",
         transaction_date: new Date().toISOString().split("T")[0],
-        notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}`,
+        notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}|${productIds}`,
       });
       if (txError) throw txError;
 
-      // 2. Update stock & sold count for each product
       for (const item of cart) {
         const { error } = await supabase
           .from("products")
@@ -146,6 +152,24 @@ export default function Vendas() {
         if (error) throw error;
       }
 
+      // If Mercado Pago, create payment link
+      if (paymentMethod === "mercadopago" && user) {
+        const { data, error } = await supabase.functions.invoke("mp-create-payment", {
+          body: {
+            amount: total,
+            description: `Venda PDV: ${itemNames}`.slice(0, 200),
+            admin_user_id: user.id,
+            source: "pdv",
+          },
+        });
+        if (error || !data?.init_point) {
+          toast.error("Venda registrada, mas falhou ao gerar link MP. Configure suas credenciais em Mercado Pago.");
+        } else {
+          setMpLink(data.init_point);
+          window.open(data.init_point, "_blank");
+        }
+      }
+
       toast.success("Venda finalizada com sucesso!");
       setCart([]);
       setConfirmOpen(false);
@@ -155,6 +179,55 @@ export default function Vendas() {
       toast.error("Erro ao finalizar venda");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const deleteSale = async (saleId: string) => {
+    try {
+      // Fetch sale to know what to revert
+      const { data: tx } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("id", saleId)
+        .single();
+
+      if (!tx) throw new Error("Venda não encontrada");
+
+      // Parse items from notes (format: payment|type|qty|productIds OR description "Venda: 2x Pomada, 1x Shampoo")
+      const parts = (tx.notes || "").split("|");
+      const productIds = (parts[3] || "").split(",").filter(Boolean);
+
+      // Parse "Venda: 2x Name, 1x Name" from description
+      const desc = tx.description.replace(/^Venda:\s*/, "");
+      const itemMatches = desc.split(",").map(s => s.trim());
+
+      // Revert stock for each product (best-effort by name match)
+      if (productIds.length) {
+        const { data: prods } = await supabase.from("products").select("*").in("id", productIds);
+        if (prods) {
+          for (const p of prods) {
+            const match = itemMatches.find(m => m.toLowerCase().includes(p.name.toLowerCase()));
+            const qty = match ? parseInt(match.match(/^(\d+)x/)?.[1] || "0") : 0;
+            if (qty > 0) {
+              await supabase.from("products").update({
+                stock: p.stock + qty,
+                sold: Math.max(0, (p.sold || 0) - qty),
+              }).eq("id", p.id);
+            }
+          }
+        }
+      }
+
+      // Delete transaction
+      const { error } = await supabase.from("transactions").delete().eq("id", saleId);
+      if (error) throw error;
+
+      toast.success("Venda apagada e estoque revertido");
+      setDeleteId(null);
+      fetchProducts();
+      fetchRecentSales();
+    } catch (err: any) {
+      toast.error("Erro ao apagar: " + (err.message || ""));
     }
   };
 
@@ -305,6 +378,7 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Itens</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -319,10 +393,61 @@ export default function Vendas() {
                   <TableCell className="text-sm capitalize">{s.payment_method}</TableCell>
                   <TableCell className="text-sm">{s.items_count}</TableCell>
                   <TableCell className="text-right font-medium text-sm text-success">{fmt(s.total)}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => setDeleteId(s.id)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Apagar venda e reverter estoque"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Apagar venda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá remover a venda do financeiro e devolver os produtos ao estoque. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteId && deleteSale(deleteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Apagar e reverter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* MP link toast */}
+      {mpLink && (
+        <div className="fixed bottom-4 right-4 bg-card border border-primary rounded-lg p-4 shadow-xl max-w-sm z-50">
+          <p className="text-sm font-medium mb-2">Link de pagamento Mercado Pago gerado</p>
+          <a
+            href={mpLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-primary text-sm hover:underline"
+          >
+            Abrir checkout <ExternalLink className="h-3 w-3" />
+          </a>
+          <button
+            onClick={() => setMpLink(null)}
+            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
         </div>
       )}
 
