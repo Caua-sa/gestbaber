@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface Product {
@@ -22,6 +23,7 @@ interface Product {
 }
 
 export default function Estoque() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,7 +61,8 @@ export default function Estoque() {
   };
 
   const handleSave = async () => {
-    const payload = {
+    if (!user) return;
+    const payload: any = {
       name, category, stock: Number(stock), min_stock: Number(minStock),
       sell_price: Number(sellPrice), cost_price: Number(costPrice), active: true,
     };
@@ -68,6 +71,7 @@ export default function Estoque() {
       if (error) { toast.error("Erro ao atualizar"); return; }
       toast.success("Produto atualizado!");
     } else {
+      payload.owner_id = user.id;
       const { error } = await supabase.from("products").insert(payload);
       if (error) { toast.error("Erro ao criar"); return; }
       toast.success("Produto criado!");
