@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
+import AdminMercadoPago from "./pages/admin/AdminMercadoPago";
 import AdminLogin from "./pages/admin/Login";
 import ClienteLogin from "./pages/cliente/Login";
 import ClientePortal from "./pages/cliente/Portal";
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/admin/landing" element={<ProtectedAdminRoute><AppLayout><AdminLanding /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/banner-ia" element={<ProtectedAdminRoute><AppLayout><AdminBannerAI /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><AppLayout><AdminUsuarios /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/mercado-pago" element={<ProtectedAdminRoute><AppLayout><AdminMercadoPago /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
