@@ -378,6 +378,7 @@ export default function Vendas() {
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Itens</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -392,10 +393,61 @@ export default function Vendas() {
                   <TableCell className="text-sm capitalize">{s.payment_method}</TableCell>
                   <TableCell className="text-sm">{s.items_count}</TableCell>
                   <TableCell className="text-right font-medium text-sm text-success">{fmt(s.total)}</TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => setDeleteId(s.id)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Apagar venda e reverter estoque"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Apagar venda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá remover a venda do financeiro e devolver os produtos ao estoque. Não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteId && deleteSale(deleteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Apagar e reverter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* MP link toast */}
+      {mpLink && (
+        <div className="fixed bottom-4 right-4 bg-card border border-primary rounded-lg p-4 shadow-xl max-w-sm z-50">
+          <p className="text-sm font-medium mb-2">Link de pagamento Mercado Pago gerado</p>
+          <a
+            href={mpLink}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-primary text-sm hover:underline"
+          >
+            Abrir checkout <ExternalLink className="h-3 w-3" />
+          </a>
+          <button
+            onClick={() => setMpLink(null)}
+            className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
         </div>
       )}
 
