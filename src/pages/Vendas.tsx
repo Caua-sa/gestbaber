@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Smartphone, Search } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, Smartphone, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -38,9 +40,11 @@ const paymentMethods = [
   { value: "dinheiro", label: "Dinheiro", icon: Banknote },
   { value: "cartao", label: "Cartão", icon: CreditCard },
   { value: "pix", label: "PIX", icon: Smartphone },
+  { value: "mercadopago", label: "Merc. Pago", icon: CreditCard },
 ];
 
 export default function Vendas() {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
@@ -50,6 +54,8 @@ export default function Vendas() {
   const [processing, setProcessing] = useState(false);
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [mpLink, setMpLink] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     const { data } = await supabase.from("products").select("*").eq("active", true).order("name");
@@ -122,19 +128,19 @@ export default function Vendas() {
     if (cart.length === 0) return;
     setProcessing(true);
     try {
-      // 1. Create transaction (cash flow entry)
       const itemNames = cart.map(c => `${c.quantity}x ${c.product.name}`).join(", ");
+      const productIds = cart.map(c => c.product.id).join(",");
+
       const { error: txError } = await supabase.from("transactions").insert({
         description: `Venda: ${itemNames}`,
         type: "entrada",
         value: total,
         category: "Venda",
         transaction_date: new Date().toISOString().split("T")[0],
-        notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}`,
+        notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}|${productIds}`,
       });
       if (txError) throw txError;
 
-      // 2. Update stock & sold count for each product
       for (const item of cart) {
         const { error } = await supabase
           .from("products")
@@ -146,6 +152,24 @@ export default function Vendas() {
         if (error) throw error;
       }
 
+      // If Mercado Pago, create payment link
+      if (paymentMethod === "mercadopago" && user) {
+        const { data, error } = await supabase.functions.invoke("mp-create-payment", {
+          body: {
+            amount: total,
+            description: `Venda PDV: ${itemNames}`.slice(0, 200),
+            admin_user_id: user.id,
+            source: "pdv",
+          },
+        });
+        if (error || !data?.init_point) {
+          toast.error("Venda registrada, mas falhou ao gerar link MP. Configure suas credenciais em Mercado Pago.");
+        } else {
+          setMpLink(data.init_point);
+          window.open(data.init_point, "_blank");
+        }
+      }
+
       toast.success("Venda finalizada com sucesso!");
       setCart([]);
       setConfirmOpen(false);
@@ -155,6 +179,55 @@ export default function Vendas() {
       toast.error("Erro ao finalizar venda");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const deleteSale = async (saleId: string) => {
+    try {
+      // Fetch sale to know what to revert
+      const { data: tx } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("id", saleId)
+        .single();
+
+      if (!tx) throw new Error("Venda não encontrada");
+
+      // Parse items from notes (format: payment|type|qty|productIds OR description "Venda: 2x Pomada, 1x Shampoo")
+      const parts = (tx.notes || "").split("|");
+      const productIds = (parts[3] || "").split(",").filter(Boolean);
+
+      // Parse "Venda: 2x Name, 1x Name" from description
+      const desc = tx.description.replace(/^Venda:\s*/, "");
+      const itemMatches = desc.split(",").map(s => s.trim());
+
+      // Revert stock for each product (best-effort by name match)
+      if (productIds.length) {
+        const { data: prods } = await supabase.from("products").select("*").in("id", productIds);
+        if (prods) {
+          for (const p of prods) {
+            const match = itemMatches.find(m => m.toLowerCase().includes(p.name.toLowerCase()));
+            const qty = match ? parseInt(match.match(/^(\d+)x/)?.[1] || "0") : 0;
+            if (qty > 0) {
+              await supabase.from("products").update({
+                stock: p.stock + qty,
+                sold: Math.max(0, (p.sold || 0) - qty),
+              }).eq("id", p.id);
+            }
+          }
+        }
+      }
+
+      // Delete transaction
+      const { error } = await supabase.from("transactions").delete().eq("id", saleId);
+      if (error) throw error;
+
+      toast.success("Venda apagada e estoque revertido");
+      setDeleteId(null);
+      fetchProducts();
+      fetchRecentSales();
+    } catch (err: any) {
+      toast.error("Erro ao apagar: " + (err.message || ""));
     }
   };
 
