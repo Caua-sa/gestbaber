@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          owner_id: string | null
           service: string
           status: string
           user_id: string
@@ -33,6 +34,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           service: string
           status?: string
           user_id: string
@@ -44,6 +46,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           service?: string
           status?: string
           user_id?: string
@@ -166,6 +169,7 @@ export type Database = {
           created_at: string
           id: string
           mp_payment_id: string | null
+          owner_id: string | null
           product_id: string
           quantity: number
           status: string
@@ -177,6 +181,7 @@ export type Database = {
           created_at?: string
           id?: string
           mp_payment_id?: string | null
+          owner_id?: string | null
           product_id: string
           quantity?: number
           status?: string
@@ -188,6 +193,7 @@ export type Database = {
           created_at?: string
           id?: string
           mp_payment_id?: string | null
+          owner_id?: string | null
           product_id?: string
           quantity?: number
           status?: string
@@ -212,6 +218,7 @@ export type Database = {
           features: Json
           id: string
           name: string
+          owner_id: string | null
           period: string
           popular: boolean
           price: number
@@ -222,6 +229,7 @@ export type Database = {
           features?: Json
           id?: string
           name: string
+          owner_id?: string | null
           period?: string
           popular?: boolean
           price: number
@@ -232,6 +240,7 @@ export type Database = {
           features?: Json
           id?: string
           name?: string
+          owner_id?: string | null
           period?: string
           popular?: boolean
           price?: number
@@ -247,6 +256,7 @@ export type Database = {
           id: string
           min_stock: number
           name: string
+          owner_id: string | null
           sell_price: number
           sold: number
           stock: number
@@ -260,6 +270,7 @@ export type Database = {
           id?: string
           min_stock?: number
           name: string
+          owner_id?: string | null
           sell_price?: number
           sold?: number
           stock?: number
@@ -273,6 +284,7 @@ export type Database = {
           id?: string
           min_stock?: number
           name?: string
+          owner_id?: string | null
           sell_price?: number
           sold?: number
           stock?: number
@@ -353,6 +365,7 @@ export type Database = {
           description: string
           id: string
           notes: string | null
+          owner_id: string | null
           transaction_date: string
           type: string
           value: number
@@ -364,6 +377,7 @@ export type Database = {
           description: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           transaction_date?: string
           type?: string
           value?: number
@@ -375,6 +389,7 @@ export type Database = {
           description?: string
           id?: string
           notes?: string | null
+          owner_id?: string | null
           transaction_date?: string
           type?: string
           value?: number

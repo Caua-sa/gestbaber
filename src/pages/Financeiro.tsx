@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface Transaction {
@@ -22,6 +23,7 @@ interface Transaction {
 const categories = ["Serviço", "Produto", "Fornecedor", "Aluguel", "Salário", "Assinaturas", "Outros"];
 
 export default function Financeiro() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,12 +61,14 @@ export default function Financeiro() {
   };
 
   const handleSave = async () => {
-    const payload = { description: desc, type, value: Number(value), category, transaction_date: date, notes: notes || null };
+    if (!user) return;
+    const payload: any = { description: desc, type, value: Number(value), category, transaction_date: date, notes: notes || null };
     if (editing) {
       const { error } = await supabase.from("transactions").update(payload).eq("id", editing.id);
       if (error) { toast.error("Erro ao atualizar"); return; }
       toast.success("Transação atualizada!");
     } else {
+      payload.owner_id = user.id;
       const { error } = await supabase.from("transactions").insert(payload);
       if (error) { toast.error("Erro ao criar"); return; }
       toast.success("Transação criada!");

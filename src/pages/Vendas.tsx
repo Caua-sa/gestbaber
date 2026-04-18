@@ -125,7 +125,7 @@ export default function Vendas() {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const finalizeSale = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !user) return;
     setProcessing(true);
     try {
       const itemNames = cart.map(c => `${c.quantity}x ${c.product.name}`).join(", ");
@@ -138,6 +138,7 @@ export default function Vendas() {
         category: "Venda",
         transaction_date: new Date().toISOString().split("T")[0],
         notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}|${productIds}`,
+        owner_id: user.id,
       });
       if (txError) throw txError;
 

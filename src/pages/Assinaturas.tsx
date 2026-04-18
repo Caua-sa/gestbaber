@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 
@@ -20,6 +21,7 @@ interface Plan {
 }
 
 export default function Assinaturas() {
+  const { user } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -34,7 +36,8 @@ export default function Assinaturas() {
   const [popular, setPopular] = useState(false);
 
   const fetchPlans = async () => {
-    const { data } = await supabase.from("plans").select("*").order("price");
+    const query = user ? supabase.from("plans").select("*").eq("owner_id", user.id).order("price") : supabase.from("plans").select("*").order("price");
+    const { data } = await query;
     if (data) setPlans(data.map(p => ({ ...p, features: (p.features as any) || [] })));
     setLoading(false);
   };
@@ -48,7 +51,7 @@ export default function Assinaturas() {
     if (data) setSubscribers(data);
   };
 
-  useEffect(() => { fetchPlans(); fetchSubscribers(); }, []);
+  useEffect(() => { if (user) { fetchPlans(); fetchSubscribers(); } }, [user]);
 
   const openCreate = () => {
     setEditingPlan(null);
@@ -67,8 +70,9 @@ export default function Assinaturas() {
   };
 
   const handleSave = async () => {
+    if (!user) return;
     const featuresArr = features.split("\n").map(f => f.trim()).filter(Boolean);
-    const payload = {
+    const payload: any = {
       name,
       price: Number(price),
       period,
@@ -82,6 +86,7 @@ export default function Assinaturas() {
       if (error) { toast.error("Erro ao atualizar plano"); return; }
       toast.success("Plano atualizado!");
     } else {
+      payload.owner_id = user.id;
       const { error } = await supabase.from("plans").insert(payload);
       if (error) { toast.error("Erro ao criar plano"); return; }
       toast.success("Plano criado!");
