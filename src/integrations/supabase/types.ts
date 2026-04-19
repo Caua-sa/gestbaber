@@ -19,6 +19,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           barber: string
+          barbershop_id: string | null
           created_at: string
           id: string
           notes: string | null
@@ -31,6 +32,7 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           barber: string
+          barbershop_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -43,6 +45,7 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           barber?: string
+          barbershop_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -50,6 +53,48 @@ export type Database = {
           service?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      barbershops: {
+        Row: {
+          active: boolean
+          address: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -164,6 +209,54 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_subscriptions: {
+        Row: {
+          admin_user_id: string
+          amount: number
+          created_at: string
+          id: string
+          init_point: string | null
+          mp_preapproval_id: string
+          next_payment_date: string | null
+          plan_id: string | null
+          raw: Json | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_user_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          init_point?: string | null
+          mp_preapproval_id: string
+          next_payment_date?: string | null
+          plan_id?: string | null
+          raw?: Json | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_user_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          init_point?: string | null
+          mp_preapproval_id?: string
+          next_payment_date?: string | null
+          plan_id?: string | null
+          raw?: Json | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
@@ -214,6 +307,7 @@ export type Database = {
       plans: {
         Row: {
           active: boolean
+          barbershop_id: string | null
           created_at: string
           features: Json
           id: string
@@ -225,6 +319,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          barbershop_id?: string | null
           created_at?: string
           features?: Json
           id?: string
@@ -236,6 +331,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          barbershop_id?: string | null
           created_at?: string
           features?: Json
           id?: string
@@ -321,6 +417,9 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          barbershop_id: string | null
+          cancel_mode: string | null
+          canceled_at: string | null
           created_at: string
           expires_at: string | null
           id: string
@@ -330,6 +429,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          barbershop_id?: string | null
+          cancel_mode?: string | null
+          canceled_at?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -339,6 +441,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          barbershop_id?: string | null
+          cancel_mode?: string | null
+          canceled_at?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string

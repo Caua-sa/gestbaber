@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scissors, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ export default function ClienteLogin() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const redirect = params.get("redirect") || "/cliente";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function ClienteLogin() {
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin + "/cliente",
+            emailRedirectTo: window.location.origin + redirect,
           },
         });
         if (error) throw error;
@@ -34,7 +36,7 @@ export default function ClienteLogin() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate("/cliente");
+        navigate(redirect);
       }
     } catch (error: any) {
       toast.error(error.message || "Erro ao processar");

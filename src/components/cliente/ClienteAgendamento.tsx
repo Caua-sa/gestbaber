@@ -30,12 +30,15 @@ export function ClienteAgendamento() {
     setLoading(true);
 
     try {
+      const { data: shop } = await supabase.from("barbershops").select("id, owner_id").eq("active", true).limit(1).maybeSingle();
       const { error } = await supabase.from("appointments").insert({
         user_id: user.id,
         service,
         barber,
         appointment_date: date,
         appointment_time: time,
+        owner_id: shop?.owner_id,
+        barbershop_id: shop?.id,
       });
       if (error) throw error;
       toast.success("Agendamento realizado com sucesso!");
