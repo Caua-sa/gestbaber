@@ -13,6 +13,7 @@ import Financeiro from "./pages/Financeiro";
 import Estoque from "./pages/Estoque";
 import Vendas from "./pages/Vendas";
 import LandingPage from "./pages/LandingPage";
+import BarbershopPublic from "./pages/BarbershopPublic";
 import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
@@ -51,6 +52,7 @@ const App = () => (
           <Routes>
             {/* Public landing page */}
             <Route path="/site" element={<LandingPage />} />
+            <Route path="/site/:slug" element={<BarbershopPublic />} />
 
             {/* Client portal routes */}
             <Route path="/cliente/login" element={<ClienteLogin />} />
