@@ -2,3 +2,6 @@ project_id = "gjfdpphvhbnsxvmyqnpf"
 
 [functions.mp-subscription-webhook]
 verify_jwt = false
+
+[functions.signup-admin]
+verify_jwt = false

@@ -19,6 +19,7 @@ import AdminBannerAI from "./pages/admin/AdminBannerAI";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminMercadoPago from "./pages/admin/AdminMercadoPago";
 import AdminLogin from "./pages/admin/Login";
+import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
 import ClientePortal from "./pages/cliente/Portal";
 import NotFound from "./pages/NotFound";
@@ -60,6 +61,7 @@ const App = () => (
 
             {/* Admin login */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/signup" element={<AdminSignup />} />
 
             {/* Protected admin routes */}
             <Route path="/" element={<ProtectedAdminRoute><AppLayout><Index /></AppLayout></ProtectedAdminRoute>} />
