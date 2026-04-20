@@ -109,9 +109,9 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Erro desconhecido";
-    console.error(msg);
+    console.error("mp-create-subscription error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
-      status: 400,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
