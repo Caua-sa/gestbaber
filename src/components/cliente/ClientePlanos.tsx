@@ -75,10 +75,13 @@ export function ClientePlanos() {
       const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
         body: { plan_id: planId, admin_user_id: shop.owner_id },
       });
-      if (error || !data?.init_point) throw new Error(data?.error || error?.message || "Erro");
+      // Edge function retorna o erro no body mesmo com status != 2xx
+      if (data?.error) throw new Error(data.error);
+      if (error) throw new Error(error.message || "Erro ao contatar servidor");
+      if (!data?.init_point) throw new Error("Resposta inválida do servidor");
       window.location.href = data.init_point;
     } catch (err: any) {
-      toast.error(err.message || "Erro ao iniciar assinatura");
+      toast.error(err.message || "Erro ao iniciar assinatura", { duration: 6000 });
       setSubscribing(null);
     }
   };
