@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scissors, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,15 @@ export default function AdminLogin() {
               {loading ? "Aguarde..." : "Entrar"}
             </Button>
           </form>
+
+          <div className="mt-6 pt-6 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground mb-3">Ainda não tem uma conta admin?</p>
+            <Link to="/admin/signup">
+              <Button variant="outline" className="w-full">
+                Criar nova conta admin
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.div>
     </div>
