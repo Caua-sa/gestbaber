@@ -18,6 +18,7 @@ import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminMercadoPago from "./pages/admin/AdminMercadoPago";
+import AdminBarbearia from "./pages/admin/AdminBarbearia";
 import AdminLogin from "./pages/admin/Login";
 import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/admin/banner-ia" element={<ProtectedAdminRoute><AppLayout><AdminBannerAI /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><AppLayout><AdminUsuarios /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/mercado-pago" element={<ProtectedAdminRoute><AppLayout><AdminMercadoPago /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/barbearia" element={<ProtectedAdminRoute><AppLayout><AdminBarbearia /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

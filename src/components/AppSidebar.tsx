@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard, Store } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ const menuItems = [
 ];
 
 const siteItems = [
+  { title: "Minha Barbearia", url: "/admin/barbearia", icon: Store },
   { title: "Editar Site", url: "/admin/landing", icon: Globe },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Usuários", url: "/admin/usuarios", icon: UserCog },
