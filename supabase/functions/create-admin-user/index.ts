@@ -69,11 +69,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Assign role
+      // Assign role, tracking which admin created this user
       if (role) {
         await adminClient.from("user_roles").insert({
           user_id: newUser.user.id,
           role,
+          created_by: caller.id,
         });
       }
 
@@ -83,10 +84,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "list") {
-      // List all admin users
+      // List only users created by the current admin (multi-tenant isolation)
       const { data: roles } = await adminClient
         .from("user_roles")
-        .select("user_id, role");
+        .select("user_id, role, created_by")
+        .eq("created_by", caller.id);
 
       const { data: profiles } = await adminClient
         .from("profiles")
