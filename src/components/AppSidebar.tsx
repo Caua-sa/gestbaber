@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard, Store } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
