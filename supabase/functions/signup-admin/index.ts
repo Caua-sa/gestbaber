@@ -40,7 +40,8 @@ Deno.serve(async (req) => {
     const userId = newUser.user.id;
 
     // Assign admin role
-    await adminClient.from("user_roles").insert({ user_id: userId, role: "admin" });
+    // Self-created admin (created_by = self) so it appears as own tenant root
+    await adminClient.from("user_roles").insert({ user_id: userId, role: "admin", created_by: userId });
 
     // Create barbershop with slug
     const baseSlug = (barbershop_name || full_name)
