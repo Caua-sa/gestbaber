@@ -122,6 +122,21 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Only allow deleting users created by this admin
+      const { data: ownedRole } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("user_id", user_id)
+        .eq("created_by", caller.id)
+        .maybeSingle();
+
+      if (!ownedRole) {
+        return new Response(JSON.stringify({ error: "Você só pode remover usuários criados por você" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       await adminClient.from("user_roles").delete().eq("user_id", user_id);
       await adminClient.auth.admin.deleteUser(user_id);
 
