@@ -117,9 +117,9 @@ export default function BarbershopPublic() {
           </div>
           <div className="flex items-center gap-3">
             {user ? (
-              <Link to="/cliente"><Button size="sm" variant="outline">Meu Portal</Button></Link>
+              <Link to={`/cliente?shop=${slug}`}><Button size="sm" variant="outline">Meu Portal</Button></Link>
             ) : (
-              <Link to={`/cliente/login?redirect=/site/${slug}`}>
+              <Link to={`/cliente/login?redirect=${encodeURIComponent(`/cliente?shop=${slug}`)}`}>
                 <Button size="sm" className="gold-gradient text-primary-foreground font-semibold">Entrar</Button>
               </Link>
             )}
