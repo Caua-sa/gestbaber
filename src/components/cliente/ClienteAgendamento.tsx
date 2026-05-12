@@ -19,6 +19,7 @@ const barbers = ["João", "Lucas"];
 
 export function ClienteAgendamento() {
   const { user } = useAuth();
+  const { shop } = useClientBarbershop();
   const [loading, setLoading] = useState(false);
   const [service, setService] = useState("");
   const [barber, setBarber] = useState("");
@@ -28,21 +29,25 @@ export function ClienteAgendamento() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!shop) {
+      toast.error("Nenhuma barbearia disponível no momento.");
+      return;
+    }
     setLoading(true);
 
     try {
-      const { data: shop } = await supabase.from("barbershops").select("id, owner_id").eq("active", true).limit(1).maybeSingle();
       const { error } = await supabase.from("appointments").insert({
         user_id: user.id,
         service,
         barber,
         appointment_date: date,
         appointment_time: time,
-        owner_id: shop?.owner_id,
-        barbershop_id: shop?.id,
+        owner_id: shop.owner_id,
+        barbershop_id: shop.id,
+        status: "pendente",
       });
       if (error) throw error;
-      toast.success("Agendamento realizado com sucesso!");
+      toast.success("Agendamento enviado! Aguarde a confirmação da barbearia.");
       setService("");
       setBarber("");
       setDate("");
