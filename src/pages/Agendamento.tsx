@@ -24,6 +24,7 @@ interface Appointment {
   notes: string | null;
   user_id: string;
   owner_id: string | null;
+  barbershop_id: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
@@ -69,15 +70,30 @@ export default function Agendamento() {
 
   const dateISO = useMemo(() => toISO(selectedDate), [selectedDate]);
 
+  const getOwnedBarbershopId = async () => {
+    if (!user) return null;
+    const { data } = await supabase
+      .from("barbershops")
+      .select("id")
+      .eq("owner_id", user.id)
+      .eq("active", true)
+      .maybeSingle();
+    return data?.id || null;
+  };
+
   const fetchAppointments = async () => {
     if (!user) return;
     setLoading(true);
-    const { data } = await supabase
+    const shopId = await getOwnedBarbershopId();
+    let query = supabase
       .from("appointments")
       .select("*")
       .eq("appointment_date", dateISO)
-      .eq("owner_id", user.id)
       .order("appointment_time");
+
+    query = shopId ? query.or(`owner_id.eq.${user.id},barbershop_id.eq.${shopId}`) : query.eq("owner_id", user.id);
+
+    const { data } = await query;
     setAppointments(data || []);
     setLoading(false);
   };
@@ -104,9 +120,11 @@ export default function Agendamento() {
     if (!user) return;
     setSaving(true);
     const notes = `${form.client_name}||${form.client_phone}||${form.notes}`;
+    const shopId = await getOwnedBarbershopId();
     const { error } = await supabase.from("appointments").insert({
       user_id: user.id, // admin acts as the owner; client info kept in notes
       owner_id: user.id,
+      barbershop_id: shopId,
       service: form.service,
       barber: form.barber || "Barbeiro",
       appointment_date: dateISO,

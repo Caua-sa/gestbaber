@@ -28,6 +28,8 @@ interface Plan {
   popular: boolean;
 }
 
+const SHOP_CONTEXT_KEY = "barberpro:client-barbershop";
+
 export default function BarbershopPublic() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -48,6 +50,7 @@ export default function BarbershopPublic() {
         .maybeSingle();
       if (!b) { setLoading(false); return; }
       setShop(b as Barbershop);
+      localStorage.setItem(SHOP_CONTEXT_KEY, JSON.stringify({ id: b.id, slug: b.slug }));
 
       const { data: p } = await supabase
         .from("plans")
@@ -63,7 +66,7 @@ export default function BarbershopPublic() {
   const subscribe = async (planId: string) => {
     if (!user) {
       toast.info("Faça login para assinar");
-      navigate(`/cliente/login?redirect=/site/${slug}`);
+      navigate(`/cliente/login?redirect=${encodeURIComponent(`/cliente?tab=planos&shop=${slug}`)}`);
       return;
     }
     if (!shop) return;
@@ -114,9 +117,9 @@ export default function BarbershopPublic() {
           </div>
           <div className="flex items-center gap-3">
             {user ? (
-              <Link to="/cliente"><Button size="sm" variant="outline">Meu Portal</Button></Link>
+              <Link to={`/cliente?shop=${slug}`}><Button size="sm" variant="outline">Meu Portal</Button></Link>
             ) : (
-              <Link to={`/cliente/login?redirect=/site/${slug}`}>
+              <Link to={`/cliente/login?redirect=${encodeURIComponent(`/cliente?shop=${slug}`)}`}>
                 <Button size="sm" className="gold-gradient text-primary-foreground font-semibold">Entrar</Button>
               </Link>
             )}
