@@ -17,6 +17,8 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Agendamento", url: "/agendamento", icon: Calendar },
+  { title: "Barbeiros", url: "/admin/barbeiros", icon: Scissors },
+  { title: "Cortes & Preços", url: "/admin/servicos", icon: Scissors },
   { title: "Assinaturas", url: "/assinaturas", icon: Users },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Estoque", url: "/estoque", icon: Package },
