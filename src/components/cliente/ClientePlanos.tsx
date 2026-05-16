@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Crown, Loader2, Building2 } from "lucide-react";
+import { Check, Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useClientBarbershop } from "@/hooks/useClientBarbershop";
 import { toast } from "sonner";
 
 interface Plan {
@@ -14,32 +14,20 @@ interface Plan {
   period: string;
   features: string[];
   popular: boolean;
-  barbershop_id: string | null;
-}
-
-interface Barbershop {
-  id: string;
-  owner_id: string;
-  name: string;
-  slug: string;
 }
 
 export function ClientePlanos() {
   const { user } = useAuth();
-  const [shops, setShops] = useState<Barbershop[]>([]);
-  const [selectedShop, setSelectedShop] = useState<string>("");
+  const { shop, loading: shopLoading } = useClientBarbershop();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activeSubPlanId, setActiveSubPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
 
   useEffect(() => {
+    if (shopLoading) return;
     (async () => {
-      const { data: s } = await supabase.from("barbershops").select("id, owner_id, name, slug").eq("active", true);
-      if (s && s.length) {
-        setShops(s);
-        setSelectedShop(s[0].id);
-      }
+      setLoading(true);
       if (user) {
         const { data: sub } = await supabase
           .from("subscriptions")
@@ -47,35 +35,30 @@ export function ClientePlanos() {
           .eq("user_id", user.id)
           .in("status", ["ativo", "cancelando"])
           .maybeSingle();
-        if (sub) setActiveSubPlanId(sub.plan_id);
+        setActiveSubPlanId(sub?.plan_id || null);
+      }
+      if (shop) {
+        const { data } = await supabase
+          .from("plans")
+          .select("*")
+          .eq("barbershop_id", shop.id)
+          .eq("active", true)
+          .order("price");
+        setPlans((data || []).map((p: any) => ({ ...p, features: p.features || [] })));
+      } else {
+        setPlans([]);
       }
       setLoading(false);
     })();
-  }, [user]);
-
-  useEffect(() => {
-    if (!selectedShop) { setPlans([]); return; }
-    supabase
-      .from("plans")
-      .select("*")
-      .eq("barbershop_id", selectedShop)
-      .eq("active", true)
-      .order("price")
-      .then(({ data }) => {
-        if (data) setPlans(data.map((p: any) => ({ ...p, features: p.features || [] })));
-      });
-  }, [selectedShop]);
+  }, [user, shop, shopLoading]);
 
   const handleSubscribe = async (planId: string) => {
-    if (!user) return;
-    const shop = shops.find(s => s.id === selectedShop);
-    if (!shop) return;
+    if (!user || !shop) return;
     setSubscribing(planId);
     try {
       const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
         body: { plan_id: planId, admin_user_id: shop.owner_id },
       });
-      // Edge function retorna o erro no body mesmo com status != 2xx
       if (data?.error) throw new Error(data.error);
       if (error) throw new Error(error.message || "Erro ao contatar servidor");
       if (!data?.init_point) throw new Error("Resposta inválida do servidor");
@@ -88,30 +71,17 @@ export function ClientePlanos() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  if (loading) return <div className="text-center text-muted-foreground py-8">Carregando planos...</div>;
+  if (loading || shopLoading) return <div className="text-center text-muted-foreground py-8">Carregando planos...</div>;
 
   return (
     <div className="space-y-6">
-      {shops.length > 1 && (
-        <div className="flex items-center gap-3 bg-card border border-border rounded-lg p-3">
-          <Building2 className="h-5 w-5 text-primary shrink-0" />
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Barbearia</p>
-            <Select value={selectedShop} onValueChange={setSelectedShop}>
-              <SelectTrigger className="bg-transparent border-0 h-7 px-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {shops.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+      {shop && (
+        <p className="text-sm text-muted-foreground">Planos disponíveis em <span className="text-primary font-medium">{shop.name}</span></p>
       )}
 
       {plans.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
-          {selectedShop ? "Esta barbearia ainda não publicou planos." : "Nenhuma barbearia disponível."}
+          {shop ? "Esta barbearia ainda não publicou planos." : "Nenhuma barbearia disponível."}
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -153,13 +123,9 @@ export function ClientePlanos() {
                   disabled={isActive || subscribing === plan.id}
                   onClick={() => handleSubscribe(plan.id)}
                 >
-                  {isActive ? (
-                    "Plano atual"
-                  ) : subscribing === plan.id ? (
+                  {isActive ? "Plano atual" : subscribing === plan.id ? (
                     <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecionando...</>
-                  ) : (
-                    "Assinar com Mercado Pago"
-                  )}
+                  ) : "Assinar com Mercado Pago"}
                 </Button>
               </motion.div>
             );
