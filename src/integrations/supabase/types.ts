@@ -19,11 +19,13 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           barber: string
+          barber_id: string | null
           barbershop_id: string | null
           created_at: string
           id: string
           notes: string | null
           owner_id: string | null
+          price: number
           service: string
           status: string
           user_id: string
@@ -32,11 +34,13 @@ export type Database = {
           appointment_date: string
           appointment_time: string
           barber: string
+          barber_id?: string | null
           barbershop_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_id?: string | null
+          price?: number
           service: string
           status?: string
           user_id: string
@@ -45,14 +49,49 @@ export type Database = {
           appointment_date?: string
           appointment_time?: string
           barber?: string
+          barber_id?: string | null
           barbershop_id?: string | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_id?: string | null
+          price?: number
           service?: string
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      barbers: {
+        Row: {
+          active: boolean
+          barbershop_id: string | null
+          commission_pct: number
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          barbershop_id?: string | null
+          commission_pct?: number
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          barbershop_id?: string | null
+          commission_pct?: number
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -412,6 +451,42 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          active: boolean
+          barbershop_id: string | null
+          created_at: string
+          duration_min: number
+          id: string
+          name: string
+          owner_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          barbershop_id?: string | null
+          created_at?: string
+          duration_min?: number
+          id?: string
+          name: string
+          owner_id: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          barbershop_id?: string | null
+          created_at?: string
+          duration_min?: number
+          id?: string
+          name?: string
+          owner_id?: string
+          price?: number
+          updated_at?: string
         }
         Relationships: []
       }
