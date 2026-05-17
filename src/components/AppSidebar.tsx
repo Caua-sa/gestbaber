@@ -27,7 +27,6 @@ const menuItems = [
 
 const siteItems = [
   { title: "Minha Barbearia", url: "/admin/barbearia", icon: Store },
-  { title: "Editar Site", url: "/admin/landing", icon: Globe },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Usuários", url: "/admin/usuarios", icon: UserCog },
   { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },

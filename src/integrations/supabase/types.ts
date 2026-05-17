@@ -101,39 +101,54 @@ export type Database = {
           address: string | null
           created_at: string
           description: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
           logo_url: string | null
+          map_embed_url: string | null
           name: string
           owner_id: string
           phone: string | null
+          photos: Json
           slug: string
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           active?: boolean
           address?: string | null
           created_at?: string
           description?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
+          map_embed_url?: string | null
           name: string
           owner_id: string
           phone?: string | null
+          photos?: Json
           slug: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           active?: boolean
           address?: string | null
           created_at?: string
           description?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           logo_url?: string | null
+          map_embed_url?: string | null
           name?: string
           owner_id?: string
           phone?: string | null
+          photos?: Json
           slug?: string
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: []
       }

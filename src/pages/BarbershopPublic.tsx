@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scissors, Star, Check, MapPin, Phone, Loader2, Crown } from "lucide-react";
+import { Scissors, Star, Check, MapPin, Phone, Loader2, Crown, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,11 @@ interface Barbershop {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  map_embed_url: string | null;
+  photos: string[];
 }
 
 interface Plan {
@@ -29,6 +34,17 @@ interface Plan {
 }
 
 const SHOP_CONTEXT_KEY = "barberpro:client-barbershop";
+
+const normalizeSocialUrl = (raw: string | null, kind: "instagram" | "facebook" | "whatsapp") => {
+  if (!raw) return null;
+  const v = raw.trim();
+  if (!v) return null;
+  if (v.startsWith("http")) return v;
+  if (kind === "instagram") return `https://instagram.com/${v.replace(/^@/, "")}`;
+  if (kind === "facebook") return `https://facebook.com/${v}`;
+  if (kind === "whatsapp") return `https://wa.me/${v.replace(/\D/g, "")}`;
+  return v;
+};
 
 export default function BarbershopPublic() {
   const { slug } = useParams();
@@ -49,7 +65,8 @@ export default function BarbershopPublic() {
         .eq("active", true)
         .maybeSingle();
       if (!b) { setLoading(false); return; }
-      setShop(b as Barbershop);
+      const shopData = { ...b, photos: Array.isArray(b.photos) ? b.photos : [] } as Barbershop;
+      setShop(shopData);
       localStorage.setItem(SHOP_CONTEXT_KEY, JSON.stringify({ id: b.id, slug: b.slug }));
 
       const { data: p } = await supabase
@@ -105,14 +122,23 @@ export default function BarbershopPublic() {
   }
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const instagramUrl = normalizeSocialUrl(shop.instagram, "instagram");
+  const facebookUrl = normalizeSocialUrl(shop.facebook, "facebook");
+  const whatsappUrl = normalizeSocialUrl(shop.whatsapp, "whatsapp");
+  const mapSrc = shop.map_embed_url
+    || (shop.address ? `https://www.google.com/maps?q=${encodeURIComponent(shop.address)}&output=embed` : null);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Scissors className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-3">
+            {shop.logo_url ? (
+              <img src={shop.logo_url} alt={shop.name} className="h-9 w-9 rounded-md object-cover border border-border" />
+            ) : (
+              <Scissors className="h-6 w-6 text-primary" />
+            )}
             <span className="font-display text-xl gold-text tracking-wider">{shop.name}</span>
           </div>
           <div className="flex items-center gap-3">
@@ -135,6 +161,9 @@ export default function BarbershopPublic() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-3xl mx-auto text-center relative"
         >
+          {shop.logo_url && (
+            <img src={shop.logo_url} alt={shop.name} className="h-24 w-24 mx-auto mb-6 rounded-2xl object-cover border-2 border-primary/30 shadow-xl" />
+          )}
           <Badge className="mb-4 bg-primary/10 text-primary border-primary/30">
             <Star className="h-3 w-3 mr-1 fill-primary" /> Barbearia Premium
           </Badge>
@@ -144,7 +173,7 @@ export default function BarbershopPublic() {
           {shop.description && (
             <p className="text-muted-foreground text-lg mb-8 leading-relaxed">{shop.description}</p>
           )}
-          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground flex-wrap">
             {shop.address && (
               <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-primary" /> {shop.address}</span>
             )}
@@ -152,8 +181,51 @@ export default function BarbershopPublic() {
               <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary" /> {shop.phone}</span>
             )}
           </div>
+
+          {(instagramUrl || facebookUrl || whatsappUrl) && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              {instagramUrl && (
+                <a href={instagramUrl} target="_blank" rel="noreferrer" className="h-10 w-10 rounded-full border border-border bg-card hover:border-primary hover:text-primary transition-colors flex items-center justify-center">
+                  <Instagram className="h-4 w-4" />
+                </a>
+              )}
+              {facebookUrl && (
+                <a href={facebookUrl} target="_blank" rel="noreferrer" className="h-10 w-10 rounded-full border border-border bg-card hover:border-primary hover:text-primary transition-colors flex items-center justify-center">
+                  <Facebook className="h-4 w-4" />
+                </a>
+              )}
+              {whatsappUrl && (
+                <a href={whatsappUrl} target="_blank" rel="noreferrer" className="h-10 w-10 rounded-full border border-border bg-card hover:border-primary hover:text-primary transition-colors flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+          )}
         </motion.div>
       </section>
+
+      {/* Galeria */}
+      {shop.photos && shop.photos.length > 0 && (
+        <section className="py-12 px-4">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-display text-3xl gold-text tracking-wide text-center mb-8">Galeria</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {shop.photos.map((url, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="aspect-square rounded-xl overflow-hidden border border-border"
+                >
+                  <img src={url} alt={`${shop.name} ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" loading="lazy" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Plans */}
       <section className="py-16 px-4 bg-secondary/20">
@@ -219,6 +291,28 @@ export default function BarbershopPublic() {
           )}
         </div>
       </section>
+
+      {/* Mapa */}
+      {mapSrc && (
+        <section className="py-16 px-4">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-display text-3xl gold-text tracking-wide text-center mb-2 flex items-center justify-center gap-2">
+              <MapPin className="h-6 w-6" /> Onde estamos
+            </h2>
+            {shop.address && <p className="text-center text-muted-foreground text-sm mb-6">{shop.address}</p>}
+            <div className="rounded-2xl overflow-hidden border border-border shadow-lg">
+              <iframe
+                src={mapSrc}
+                title={`Mapa - ${shop.name}`}
+                className="w-full h-[420px] border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border">
         © {new Date().getFullYear()} {shop.name} — Powered by Barber Pro
