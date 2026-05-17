@@ -58,15 +58,23 @@ export default function Vendas() {
   const [mpLink, setMpLink] = useState<string | null>(null);
 
   const fetchProducts = async () => {
-    const { data } = await supabase.from("products").select("*").eq("active", true).order("name");
+    if (!user) return;
+    const { data } = await supabase
+      .from("products")
+      .select("*")
+      .eq("owner_id", user.id)
+      .eq("active", true)
+      .order("name");
     if (data) setProducts(data);
     setLoading(false);
   };
 
   const fetchRecentSales = async () => {
+    if (!user) return;
     const { data } = await supabase
       .from("transactions")
       .select("*")
+      .eq("owner_id", user.id)
       .eq("category", "Venda")
       .order("created_at", { ascending: false })
       .limit(20);
@@ -82,7 +90,7 @@ export default function Vendas() {
     }
   };
 
-  useEffect(() => { fetchProducts(); fetchRecentSales(); }, []);
+  useEffect(() => { if (user) { fetchProducts(); fetchRecentSales(); } }, [user]);
 
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
