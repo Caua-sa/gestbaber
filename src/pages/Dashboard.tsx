@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ cortesHoje: 0, receitaDia: 0, clientesAtivos: 0, ticketMedio: 0 });
   const [weekData, setWeekData] = useState(WEEK_LABELS.map(day => ({ day, cortes: 0 })));
   const [recent, setRecent] = useState<RecentCut[]>([]);
+  const [marginData, setMarginData] = useState<{ name: string; value: number }[]>([]);
 
   useEffect(() => {
     if (!user) return;
