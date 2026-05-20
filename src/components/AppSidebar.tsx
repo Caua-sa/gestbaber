@@ -19,6 +19,7 @@ const menuItems = [
   { title: "Agendamento", url: "/agendamento", icon: Calendar },
   { title: "Barbeiros", url: "/admin/barbeiros", icon: Scissors },
   { title: "Cortes & Preços", url: "/admin/servicos", icon: Scissors },
+  { title: "Ganhos Barbeiros", url: "/admin/ganhos-barbeiros", icon: TrendingUp },
   { title: "Assinaturas", url: "/assinaturas", icon: Users },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Estoque", url: "/estoque", icon: Package },
