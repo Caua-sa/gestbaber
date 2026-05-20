@@ -75,6 +75,25 @@ export default function Dashboard() {
         id: r.id, service: r.service, barber: r.barber,
         price: Number(r.price || 0), appointment_time: r.appointment_time,
       })));
+
+      // Margem por categoria (mês atual)
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const { data: monthTx } = await supabase
+        .from("transactions")
+        .select("value,type,category")
+        .eq("owner_id", user.id)
+        .gte("transaction_date", toISO(monthStart));
+      const byCat: Record<string, number> = {};
+      (monthTx || []).forEach((t: any) => {
+        const v = Number(t.value || 0);
+        const signed = t.type === "entrada" ? v : -v;
+        byCat[t.category || "Outros"] = (byCat[t.category || "Outros"] || 0) + signed;
+      });
+      setMarginData(
+        Object.entries(byCat)
+          .map(([name, value]) => ({ name, value: Math.max(0, value) }))
+          .filter(d => d.value > 0)
+      );
     })();
   }, [user]);
 
