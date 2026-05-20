@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Scissors, DollarSign, Users, TrendingUp } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const PIE_COLORS = ["hsl(38,92%,50%)", "hsl(160,70%,45%)", "hsl(220,70%,55%)", "hsl(340,75%,55%)", "hsl(280,60%,55%)", "hsl(20,80%,55%)"];
 
 function toISO(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
