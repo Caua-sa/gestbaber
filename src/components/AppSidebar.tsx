@@ -66,7 +66,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      end={item.url === "/"}
+                      end={item.url === "/dashboard"}
                       className="hover:bg-secondary/80 transition-colors"
                       activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                     >
