@@ -113,16 +113,40 @@ export default function Dashboard() {
         <StatCard title="Ticket Médio" value={fmt(stats.ticketMedio)} icon={TrendingUp} index={3} />
       </div>
 
-      <div className="bg-card border border-border rounded-lg p-5">
-        <h2 className="font-display text-xl mb-4 tracking-wide">Cortes da Semana</h2>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={weekData}>
-            <XAxis dataKey="day" stroke="hsl(0,0%,40%)" fontSize={12} />
-            <YAxis stroke="hsl(0,0%,40%)" fontSize={12} allowDecimals={false} />
-            <Tooltip contentStyle={{ backgroundColor: "hsl(0,0%,9%)", border: "1px solid hsl(0,0%,16%)", borderRadius: 8, color: "hsl(40,10%,90%)" }} />
-            <Bar dataKey="cortes" fill="hsl(38,92%,50%)" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card border border-border rounded-lg p-5">
+          <h2 className="font-display text-xl mb-4 tracking-wide">Cortes da Semana</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={weekData}>
+              <XAxis dataKey="day" stroke="hsl(0,0%,40%)" fontSize={12} />
+              <YAxis stroke="hsl(0,0%,40%)" fontSize={12} allowDecimals={false} />
+              <Tooltip contentStyle={{ backgroundColor: "hsl(0,0%,9%)", border: "1px solid hsl(0,0%,16%)", borderRadius: 8, color: "hsl(40,10%,90%)" }} />
+              <Bar dataKey="cortes" fill="hsl(38,92%,50%)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg p-5">
+          <h2 className="font-display text-xl mb-4 tracking-wide">Margens por Categoria (mês)</h2>
+          {marginData.length === 0 ? (
+            <p className="text-muted-foreground text-sm py-16 text-center">Sem receitas registradas neste mês.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie data={marginData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={2}>
+                  {marginData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v: any) => fmt(Number(v))}
+                  contentStyle={{ backgroundColor: "hsl(0,0%,9%)", border: "1px solid hsl(0,0%,16%)", borderRadius: 8, color: "hsl(40,10%,90%)" }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
