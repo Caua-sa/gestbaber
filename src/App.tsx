@@ -21,6 +21,7 @@ import AdminMercadoPago from "./pages/admin/AdminMercadoPago";
 import AdminBarbearia from "./pages/admin/AdminBarbearia";
 import AdminBarbeiros from "./pages/admin/AdminBarbeiros";
 import AdminServicos from "./pages/admin/AdminServicos";
+import AdminGanhosBarbeiros from "./pages/admin/AdminGanhosBarbeiros";
 import AdminLogin from "./pages/admin/Login";
 import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
@@ -54,7 +55,8 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public landing page */}
+            {/* Public landing page (root domain) */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/site" element={<LandingPage />} />
             <Route path="/site/:slug" element={<BarbershopPublic />} />
 
@@ -67,7 +69,7 @@ const App = () => (
             <Route path="/admin/signup" element={<AdminSignup />} />
 
             {/* Protected admin routes */}
-            <Route path="/" element={<ProtectedAdminRoute><AppLayout><Index /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/dashboard" element={<ProtectedAdminRoute><AppLayout><Index /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/agendamento" element={<ProtectedAdminRoute><AppLayout><Agendamento /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/assinaturas" element={<ProtectedAdminRoute><AppLayout><Assinaturas /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/financeiro" element={<ProtectedAdminRoute><AppLayout><Financeiro /></AppLayout></ProtectedAdminRoute>} />
@@ -80,6 +82,7 @@ const App = () => (
             <Route path="/admin/barbearia" element={<ProtectedAdminRoute><AppLayout><AdminBarbearia /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/barbeiros" element={<ProtectedAdminRoute><AppLayout><AdminBarbeiros /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/servicos" element={<ProtectedAdminRoute><AppLayout><AdminServicos /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/ganhos-barbeiros" element={<ProtectedAdminRoute><AppLayout><AdminGanhosBarbeiros /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

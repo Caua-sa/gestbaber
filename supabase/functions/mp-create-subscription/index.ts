@@ -62,7 +62,11 @@ Deno.serve(async (req) => {
       .single();
     if (subErr) throw subErr;
 
-    // Create MP preapproval (recurring subscription)
+    const notificationUrl = `${supabaseUrl}/functions/v1/mp-subscription-webhook`;
+
+    // Create MP preapproval (recurring subscription).
+    // NOTE: Não pré-preenchemos payer_email para que o Mercado Pago apresente
+    // o checkout completo (login + coleta de cartão) ao cliente.
     const mpRes = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
@@ -72,8 +76,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         reason: `Assinatura ${plan.name}`,
         external_reference: subRecord.id,
-        payer_email: userData.user.email,
         back_url: backUrl,
+        notification_url: notificationUrl,
         auto_recurring: {
           frequency: 1,
           frequency_type: "months",

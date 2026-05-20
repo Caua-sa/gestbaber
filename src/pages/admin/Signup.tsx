@@ -30,7 +30,7 @@ export default function AdminSignup() {
       if (signInError) throw signInError;
 
       toast.success("Conta criada com sucesso!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar conta");
     } finally {
