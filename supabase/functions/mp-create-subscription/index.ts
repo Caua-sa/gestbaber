@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "";
-    const backUrl = `${origin}/cliente`;
+    const backUrl = `${origin}/cliente?tab=planos`;
 
     // Create internal subscription record (pending)
     const { data: subRecord, error: subErr } = await admin
@@ -65,8 +65,7 @@ Deno.serve(async (req) => {
     const notificationUrl = `${supabaseUrl}/functions/v1/mp-subscription-webhook`;
 
     // Create MP preapproval (recurring subscription).
-    // NOTE: Não pré-preenchemos payer_email para que o Mercado Pago apresente
-    // o checkout completo (login + coleta de cartão) ao cliente.
+    // Mercado Pago exige payer_email para abrir corretamente o checkout de assinatura recorrente.
     const mpRes = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
@@ -76,6 +75,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         reason: `Assinatura ${plan.name}`,
         external_reference: subRecord.id,
+        payer_email: userData.user.email,
         back_url: backUrl,
         notification_url: notificationUrl,
         auto_recurring: {
@@ -91,8 +91,10 @@ Deno.serve(async (req) => {
     const mpData = await mpRes.json();
     if (!mpRes.ok) {
       console.error("MP preapproval error", mpData);
-      throw new Error(mpData.message || "Falha ao criar assinatura no MP");
+      throw new Error(mpData.message || mpData.error || "Falha ao criar assinatura recorrente no Mercado Pago");
     }
+    const checkoutUrl = mpData.init_point || mpData.sandbox_init_point;
+    if (!checkoutUrl) throw new Error("Mercado Pago não retornou link de checkout");
 
     // Save mp_subscription
     await admin.from("mp_subscriptions").insert({
@@ -103,12 +105,12 @@ Deno.serve(async (req) => {
       mp_preapproval_id: mpData.id,
       status: "pending",
       amount: Number(plan.price),
-      init_point: mpData.init_point,
+      init_point: checkoutUrl,
       raw: mpData,
     });
 
     return new Response(
-      JSON.stringify({ init_point: mpData.init_point, preapproval_id: mpData.id }),
+      JSON.stringify({ init_point: checkoutUrl, preapproval_id: mpData.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
