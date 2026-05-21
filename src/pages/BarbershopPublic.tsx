@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { applyShopBranding } from "@/lib/siteBranding";
 
 interface Barbershop {
   id: string;
@@ -67,12 +68,13 @@ export default function BarbershopPublic() {
       if (!b) { setLoading(false); return; }
       const shopData = { ...b, photos: Array.isArray(b.photos) ? b.photos : [] } as Barbershop;
       setShop(shopData);
+      applyShopBranding(shopData);
       localStorage.setItem(SHOP_CONTEXT_KEY, JSON.stringify({ id: b.id, slug: b.slug }));
 
       const { data: p } = await supabase
         .from("plans")
         .select("*")
-        .eq("barbershop_id", b.id)
+        .or(`barbershop_id.eq.${b.id},owner_id.eq.${b.owner_id}`)
         .eq("active", true)
         .order("price");
       if (p) setPlans(p.map((x: any) => ({ ...x, features: x.features || [] })));

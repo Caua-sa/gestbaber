@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scissors, MapPin, Phone, Instagram, Facebook, MessageCircle, Star, ChevronRight, Crown, Check, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { applyShopBranding } from "@/lib/siteBranding";
 
 interface Shop {
   id: string; owner_id: string; slug: string; name: string;
@@ -33,6 +34,7 @@ const normalize = (raw: string | null, kind: "instagram" | "facebook" | "whatsap
 export default function LandingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [shop, setShop] = useState<Shop | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -42,29 +44,43 @@ export default function LandingPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: b } = await supabase
-        .from("barbershops")
-        .select("*")
-        .eq("active", true)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const stored = (() => {
+        try { return JSON.parse(localStorage.getItem(SHOP_KEY) || "{}"); } catch { return {}; }
+      })();
+      const slugFromUrl = params.get("shop") || params.get("slug") || stored.slug;
+      let query = supabase.from("barbershops").select("*").eq("active", true);
+      if (slugFromUrl) query = query.eq("slug", slugFromUrl);
+      else if (user) query = query.eq("owner_id", user.id);
+      else query = query.order("created_at", { ascending: false }).limit(1);
+
+      let { data: b } = await query.maybeSingle();
+      if (!b && slugFromUrl) {
+        const fallback = await supabase
+          .from("barbershops")
+          .select("*")
+          .eq("active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        b = fallback.data;
+      }
       if (!b) { setLoading(false); return; }
       const s: Shop = { ...b, photos: Array.isArray(b.photos) ? b.photos : [] } as Shop;
       setShop(s);
+      applyShopBranding(s);
       localStorage.setItem(SHOP_KEY, JSON.stringify({ id: s.id, slug: s.slug }));
 
       const [{ data: p }, { data: sv }, { data: br }] = await Promise.all([
-        supabase.from("plans").select("*").eq("barbershop_id", s.id).eq("active", true).order("price"),
-        supabase.from("services").select("id,name,price,duration_min").eq("barbershop_id", s.id).eq("active", true).order("price"),
-        supabase.from("barbers").select("id,name").eq("barbershop_id", s.id).eq("active", true).order("name"),
+        supabase.from("plans").select("*").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("price"),
+        supabase.from("services").select("id,name,price,duration_min").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("price"),
+        supabase.from("barbers").select("id,name").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("name"),
       ]);
       setPlans((p || []).map((x: any) => ({ ...x, features: x.features || [] })));
       setServices((sv || []) as Service[]);
       setBarbers((br || []) as Barber[]);
       setLoading(false);
     })();
-  }, []);
+  }, [params, user]);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
