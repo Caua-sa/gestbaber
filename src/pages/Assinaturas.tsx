@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Users, Check, Star, Plus, Pencil, Trash2 } from "lucide-react";
+import { Crown, Users, Check, Star, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
@@ -18,6 +18,21 @@ interface Plan {
   features: string[];
   popular: boolean;
   active: boolean;
+  barbershop_id?: string | null;
+}
+
+type SubFilter = "todos" | "pagos" | "a_pagar" | "vencidos";
+
+interface SubscriberRow {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: string;
+  started_at: string;
+  expires_at: string | null;
+  client_name: string;
+  plan_name: string;
+  plan_price: number;
 }
 
 export default function Assinaturas() {
@@ -26,7 +41,10 @@ export default function Assinaturas() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [subscribers, setSubscribers] = useState<any[]>([]);
+  const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
+  const [subFilter, setSubFilter] = useState<SubFilter>("todos");
+  const [clientSearch, setClientSearch] = useState("");
+  const [shopId, setShopId] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -43,15 +61,44 @@ export default function Assinaturas() {
   };
 
   const fetchSubscribers = async () => {
-    const { data } = await supabase
+    if (!user) return;
+    const { data: subs } = await supabase
       .from("subscriptions")
-      .select("*, plans(name), profiles(full_name)")
+      .select("id,user_id,plan_id,status,started_at,expires_at,barbershop_id")
       .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) setSubscribers(data);
+      .limit(100);
+
+    const planIds = [...new Set((subs || []).map((s) => s.plan_id).filter(Boolean))];
+    const userIds = [...new Set((subs || []).map((s) => s.user_id).filter(Boolean))];
+
+    const [{ data: planRows }, { data: profileRows }] = await Promise.all([
+      planIds.length ? supabase.from("plans").select("id,name,price,owner_id").in("id", planIds) : Promise.resolve({ data: [] } as any),
+      userIds.length ? supabase.from("profiles").select("user_id,full_name").in("user_id", userIds) : Promise.resolve({ data: [] } as any),
+    ]);
+
+    const planMap = new Map((planRows || []).map((p: any) => [p.id, p]));
+    const profileMap = new Map((profileRows || []).map((p: any) => [p.user_id, p]));
+    setSubscribers((subs || []).map((sub: any) => {
+      const plan = planMap.get(sub.plan_id) as any;
+      const profile = profileMap.get(sub.user_id) as any;
+      return {
+        ...sub,
+        client_name: profile?.full_name || "Cliente cadastrado",
+        plan_name: plan?.name || "Plano removido",
+        plan_price: Number(plan?.price || 0),
+      };
+    }));
   };
 
-  useEffect(() => { if (user) { fetchPlans(); fetchSubscribers(); } }, [user]);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle();
+      setShopId(data?.id || null);
+      fetchPlans();
+      fetchSubscribers();
+    })();
+  }, [user]);
 
   const openCreate = () => {
     setEditingPlan(null);
@@ -87,12 +134,28 @@ export default function Assinaturas() {
       toast.success("Plano atualizado!");
     } else {
       payload.owner_id = user.id;
+      payload.barbershop_id = shopId;
       const { error } = await supabase.from("plans").insert(payload);
       if (error) { toast.error("Erro ao criar plano"); return; }
       toast.success("Plano criado!");
     }
     setDialogOpen(false);
     fetchPlans();
+  };
+
+  const updateSubscriberStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("subscriptions").update({ status }).eq("id", id);
+    if (error) return toast.error("Erro ao atualizar assinatura");
+    toast.success("Assinatura atualizada!");
+    fetchSubscribers();
+  };
+
+  const deleteSubscriber = async (id: string) => {
+    if (!confirm("Apagar esta assinatura do cliente?")) return;
+    const { error } = await supabase.from("subscriptions").delete().eq("id", id);
+    if (error) return toast.error("Erro ao apagar assinatura");
+    toast.success("Assinatura apagada!");
+    fetchSubscribers();
   };
 
   const handleDelete = async (id: string) => {
@@ -102,7 +165,19 @@ export default function Assinaturas() {
     fetchPlans();
   };
 
+  const isExpired = (s: SubscriberRow) => !!s.expires_at && new Date(s.expires_at) < new Date() && s.status !== "ativo";
+  const filteredSubscribers = subscribers.filter((s) => {
+    const term = clientSearch.trim().toLowerCase();
+    const byClient = !term || s.client_name.toLowerCase().includes(term) || s.plan_name.toLowerCase().includes(term);
+    if (!byClient) return false;
+    if (subFilter === "pagos") return s.status === "ativo";
+    if (subFilter === "a_pagar") return ["pendente", "a_pagar"].includes(s.status);
+    if (subFilter === "vencidos") return isExpired(s) || s.status === "vencido";
+    return true;
+  });
   const activeSubscribers = subscribers.filter(s => s.status === "ativo").length;
+  const pendingSubscribers = subscribers.filter(s => ["pendente", "a_pagar"].includes(s.status)).length;
+  const expiredSubscribers = subscribers.filter(isExpired).length;
 
   return (
     <div className="space-y-6">
