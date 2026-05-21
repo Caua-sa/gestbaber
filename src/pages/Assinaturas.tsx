@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Users, Check, Star, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard } from "lucide-react";
+import { Crown, Users, Check, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
