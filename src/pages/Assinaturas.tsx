@@ -191,10 +191,11 @@ export default function Assinaturas() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard title="Assinantes Ativos" value={String(activeSubscribers)} icon={Users} index={0} />
-        <StatCard title="Total de Planos" value={String(plans.length)} icon={Crown} index={1} />
-        <StatCard title="Plano Mais Popular" value={plans.find(p => p.popular)?.name || "—"} icon={Star} index={2} />
+        <StatCard title="A Pagar" value={String(pendingSubscribers)} icon={CreditCard} index={1} />
+        <StatCard title="Vencidos" value={String(expiredSubscribers)} icon={CalendarClock} index={2} />
+        <StatCard title="Total de Planos" value={String(plans.length)} icon={Crown} index={3} />
       </div>
 
       {/* Plans grid */}
@@ -239,29 +240,77 @@ export default function Assinaturas() {
       </div>
 
       {/* Subscribers table */}
-      {subscribers.length > 0 && (
-        <div className="bg-card border border-border rounded-lg p-5">
-          <h2 className="font-display text-xl mb-4 tracking-wide">Assinantes</h2>
+      <div className="bg-card border border-border rounded-lg p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+            <h2 className="font-display text-xl tracking-wide flex items-center gap-2"><Filter className="h-4 w-4 text-primary" /> Assinantes</h2>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="Filtrar por cliente ou plano"
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                className="bg-secondary border-border sm:w-64"
+              />
+              <div className="flex gap-1 rounded-md border border-border bg-secondary p-1">
+                {([
+                  ["todos", "Todos"],
+                  ["pagos", "Pagos"],
+                  ["a_pagar", "A pagar"],
+                  ["vencidos", "Vencidos"],
+                ] as [SubFilter, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => setSubFilter(value)}
+                    className={`px-3 py-1.5 text-xs rounded-sm transition-colors ${subFilter === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-3 px-2 font-medium">Cliente</th>
                   <th className="text-left py-3 px-2 font-medium">Plano</th>
+                  <th className="text-left py-3 px-2 font-medium">Valor</th>
                   <th className="text-left py-3 px-2 font-medium">Início</th>
+                  <th className="text-left py-3 px-2 font-medium">Vencimento</th>
                   <th className="text-left py-3 px-2 font-medium">Status</th>
+                  <th className="text-right py-3 px-2 font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {subscribers.map((sub) => (
+                {filteredSubscribers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhum assinante encontrado.</td>
+                  </tr>
+                ) : filteredSubscribers.map((sub) => (
                   <tr key={sub.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                    <td className="py-3 px-2 font-medium">{(sub.profiles as any)?.full_name || "—"}</td>
+                    <td className="py-3 px-2 font-medium">{sub.client_name}</td>
                     <td className="py-3 px-2">
-                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{(sub.plans as any)?.name || "—"}</span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">{sub.plan_name}</span>
                     </td>
+                    <td className="py-3 px-2 text-muted-foreground">{sub.plan_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</td>
                     <td className="py-3 px-2 text-muted-foreground">{new Date(sub.started_at).toLocaleDateString("pt-BR")}</td>
+                    <td className="py-3 px-2 text-muted-foreground">{sub.expires_at ? new Date(sub.expires_at).toLocaleDateString("pt-BR") : "—"}</td>
                     <td className="py-3 px-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${sub.status === "ativo" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>{sub.status}</span>
+                      <select
+                        value={sub.status}
+                        onChange={(e) => updateSubscriberStatus(sub.id, e.target.value)}
+                        className={`text-xs px-2 py-1 rounded-full border border-border bg-secondary ${sub.status === "ativo" ? "text-success" : sub.status === "pendente" ? "text-primary" : "text-destructive"}`}
+                      >
+                        <option value="ativo">pago</option>
+                        <option value="pendente">a pagar</option>
+                        <option value="vencido">vencido</option>
+                        <option value="cancelado">cancelado</option>
+                      </select>
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteSubscriber(sub.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -269,7 +318,6 @@ export default function Assinaturas() {
             </table>
           </div>
         </div>
-      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
