@@ -444,6 +444,11 @@ export default function Agendamento() {
                           <SelectItem value="cancelado">Cancelado</SelectItem>
                         </SelectContent>
                       </Select>
+                      {app.status === "concluido" && Number(app.price) > 0 && (
+                        <button onClick={() => issueReceipt(app)} title="Gerar recibo PDF" className="p-2 text-muted-foreground hover:text-primary transition">
+                          <FileText className="h-4 w-4" />
+                        </button>
+                      )}
                       <button onClick={() => handleDelete(app.id)} className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition">
                         <Trash2 className="h-4 w-4" />
                       </button>
