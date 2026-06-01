@@ -34,23 +34,61 @@ export default function AdminMercadoPago() {
   const [saving, setSaving] = useState(false);
   const [exists, setExists] = useState(false);
 
-  useEffect(() => {
+  const [recurringPlans, setRecurringPlans] = useState<MpRecurringPlan[]>([]);
+  const [localPlans, setLocalPlans] = useState<LocalPlan[]>([]);
+  const [planDialog, setPlanDialog] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [planForm, setPlanForm] = useState({ reason: "", amount: "", frequency: "1", frequency_type: "months", plan_id: "" });
+
+  const fetchAll = async () => {
     if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from("mp_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (data) {
-        setAccessToken(data.access_token);
-        setPublicKey(data.public_key);
-        setActive(data.active);
-        setExists(true);
-      }
-      setLoading(false);
-    })();
-  }, [user]);
+    const [{ data: s }, { data: rp }, { data: lp }] = await Promise.all([
+      supabase.from("mp_settings").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("mp_recurring_plans").select("*").eq("admin_user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("plans").select("id, name, price").eq("owner_id", user.id).eq("active", true).order("name"),
+    ]);
+    if (s) { setAccessToken(s.access_token); setPublicKey(s.public_key); setActive(s.active); setExists(true); }
+    setRecurringPlans((rp || []) as MpRecurringPlan[]);
+    setLocalPlans((lp || []).map((p: any) => ({ ...p, price: Number(p.price) })));
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, [user]);
+
+  const createRecurringPlan = async () => {
+    if (!exists || !active) { toast.error("Salve e ative suas credenciais primeiro"); return; }
+    if (!planForm.reason.trim() || !planForm.amount) { toast.error("Preencha nome e valor"); return; }
+    setCreating(true);
+    const { data, error } = await supabase.functions.invoke("mp-create-preapproval-plan", {
+      body: {
+        reason: planForm.reason.trim(),
+        amount: Number(planForm.amount),
+        frequency: Number(planForm.frequency) || 1,
+        frequency_type: planForm.frequency_type,
+        plan_id: planForm.plan_id || null,
+      },
+    });
+    setCreating(false);
+    if (error || (data && (data as any).error)) {
+      toast.error(((data as any)?.error) || error?.message || "Erro ao criar plano");
+      return;
+    }
+    toast.success("Plano recorrente criado no Mercado Pago!");
+    setPlanDialog(false);
+    setPlanForm({ reason: "", amount: "", frequency: "1", frequency_type: "months", plan_id: "" });
+    fetchAll();
+  };
+
+  const deleteRecurringPlan = async (id: string) => {
+    if (!confirm("Remover este plano recorrente? (não cancela no MP)")) return;
+    const { error } = await supabase.from("mp_recurring_plans").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Removido");
+    fetchAll();
+  };
+
+  const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success("Link copiado!"); };
+
 
   const save = async () => {
     if (!user) return;
