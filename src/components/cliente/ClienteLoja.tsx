@@ -28,7 +28,7 @@ export function ClienteLoja() {
   const [ordering, setOrdering] = useState(false);
 
   useEffect(() => {
-    supabase.from("products").select("id, name, category, sell_price, stock, owner_id").eq("active", true).gt("stock", 0).order("name")
+    supabase.from("products").select("id, name, category, sell_price, stock, owner_id").eq("active", true).eq("visible_on_site", true).gt("stock", 0).order("name")
       .then(({ data }) => { if (data) setProducts(data as Product[]); setLoading(false); });
   }, []);
 
