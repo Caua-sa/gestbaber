@@ -152,6 +152,51 @@ export type Database = {
         }
         Relationships: []
       }
+      insumos: {
+        Row: {
+          active: boolean
+          cost_price: number
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          notes: string | null
+          owner_id: string
+          stock: number
+          supplier: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cost_price?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          notes?: string | null
+          owner_id: string
+          stock?: number
+          supplier?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cost_price?: number
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          stock?: number
+          supplier?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       landing_page_settings: {
         Row: {
           created_at: string
@@ -228,6 +273,57 @@ export type Database = {
           raw?: Json | null
           reference_id?: string | null
           source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mp_recurring_plans: {
+        Row: {
+          admin_user_id: string
+          amount: number
+          created_at: string
+          currency_id: string
+          frequency: number
+          frequency_type: string
+          id: string
+          init_point: string | null
+          mp_preapproval_plan_id: string
+          plan_id: string | null
+          raw: Json | null
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          amount: number
+          created_at?: string
+          currency_id?: string
+          frequency?: number
+          frequency_type?: string
+          id?: string
+          init_point?: string | null
+          mp_preapproval_plan_id: string
+          plan_id?: string | null
+          raw?: Json | null
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          amount?: number
+          created_at?: string
+          currency_id?: string
+          frequency?: number
+          frequency_type?: string
+          id?: string
+          init_point?: string | null
+          mp_preapproval_plan_id?: string
+          plan_id?: string | null
+          raw?: Json | null
+          reason?: string
           status?: string
           updated_at?: string
         }
@@ -411,6 +507,7 @@ export type Database = {
           sold: number
           stock: number
           updated_at: string
+          visible_on_site: boolean
         }
         Insert: {
           active?: boolean
@@ -425,6 +522,7 @@ export type Database = {
           sold?: number
           stock?: number
           updated_at?: string
+          visible_on_site?: boolean
         }
         Update: {
           active?: boolean
@@ -439,6 +537,7 @@ export type Database = {
           sold?: number
           stock?: number
           updated_at?: string
+          visible_on_site?: boolean
         }
         Relationships: []
       }
