@@ -1,13 +1,29 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, Save, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { CreditCard, Save, ExternalLink, CheckCircle2, AlertCircle, Repeat, Plus, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+
+interface MpRecurringPlan {
+  id: string;
+  reason: string;
+  amount: number;
+  frequency: number;
+  frequency_type: string;
+  status: string;
+  mp_preapproval_plan_id: string;
+  init_point: string | null;
+  plan_id: string | null;
+}
+interface LocalPlan { id: string; name: string; price: number }
 
 export default function AdminMercadoPago() {
   const { user } = useAuth();
