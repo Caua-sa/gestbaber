@@ -255,7 +255,17 @@ export default function Agendamento() {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-xs text-muted-foreground">Será registrado como concluído e lançado no financeiro automaticamente.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Data</label>
+                    <Input type="date" value={walk.date} onChange={e => setWalk({ ...walk, date: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Horário</label>
+                    <Input type="time" value={walk.time} onChange={e => setWalk({ ...walk, time: e.target.value })} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Vazio = agora. Para atendimentos retroativos, escolha data e hora passadas. Será lançado no financeiro automaticamente.</p>
                 <Button type="submit" className="w-full gold-gradient text-primary-foreground" disabled={saving || !walk.service_id}>
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : "Registrar atendimento"}
                 </Button>
