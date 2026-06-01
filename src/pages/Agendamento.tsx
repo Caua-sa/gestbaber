@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap } from "lucide-react";
+import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText } from "lucide-react";
+import { generateReceiptPDF } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -58,14 +59,17 @@ export default function Agendamento() {
   const [shopId, setShopId] = useState<string | null>(null);
 
   const [form, setForm] = useState({ client_name: "", client_phone: "", service_id: "", barber_id: "", appointment_time: "", notes: "" });
-  const [walk, setWalk] = useState({ client_name: "", service_id: "", barber_id: "" });
+  const [walk, setWalk] = useState({ client_name: "", service_id: "", barber_id: "", date: "", time: "" });
+
+  const [shopInfo, setShopInfo] = useState<{ name: string; address: string | null; phone: string | null } | null>(null);
 
   const dateISO = useMemo(() => toISO(selectedDate), [selectedDate]);
 
   const fetchMeta = async () => {
     if (!user) return;
-    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle();
+    const { data: shop } = await supabase.from("barbershops").select("id, name, address, phone").eq("owner_id", user.id).maybeSingle();
     setShopId(shop?.id || null);
+    setShopInfo(shop ? { name: shop.name, address: shop.address, phone: shop.phone } : null);
     const [{ data: svc }, { data: brb }] = await Promise.all([
       supabase.from("services").select("id,name,price").eq("owner_id", user.id).eq("active", true).order("name"),
       supabase.from("barbers").select("id,name").eq("owner_id", user.id).eq("active", true).order("name"),
@@ -158,12 +162,13 @@ export default function Agendamento() {
     if (!svc) { toast.error("Escolha um serviço"); return; }
     setSaving(true);
     const now = new Date();
-    const time = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    const dateStr = walk.date || toISO(now);
+    const timeStr = walk.time || `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
     const { data, error } = await supabase.from("appointments").insert({
       user_id: user.id, owner_id: user.id, barbershop_id: shopId,
       service: svc.name, price: svc.price,
       barber: brb?.name || "Avulso", barber_id: brb?.id || null,
-      appointment_date: toISO(now), appointment_time: time,
+      appointment_date: dateStr, appointment_time: timeStr,
       status: "concluido",
       notes: `${walk.client_name || "Avulso"}||||Atendimento avulso`,
     }).select().single();
@@ -172,8 +177,24 @@ export default function Agendamento() {
     setSaving(false);
     toast.success("Atendimento avulso registrado");
     setWalkOpen(false);
-    setWalk({ client_name: "", service_id: "", barber_id: "" });
+    setWalk({ client_name: "", service_id: "", barber_id: "", date: "", time: "" });
     fetchAppointments();
+  };
+
+  const issueReceipt = (app: Appointment) => {
+    const note = parseNote(app.notes);
+    generateReceiptPDF({
+      shopName: shopInfo?.name || "Barbearia",
+      shopAddress: shopInfo?.address || undefined,
+      shopPhone: shopInfo?.phone || undefined,
+      clientName: note.name || "Cliente",
+      service: app.service,
+      barber: app.barber,
+      date: new Date(app.appointment_date + "T00:00:00").toLocaleDateString("pt-BR"),
+      time: app.appointment_time?.slice(0, 5) || "",
+      price: Number(app.price || 0),
+      receiptId: app.id,
+    });
   };
 
   const shiftDay = (delta: number) => { const d = new Date(selectedDate); d.setDate(d.getDate() + delta); setSelectedDate(d); };
