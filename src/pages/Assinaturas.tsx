@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Users, Check, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard } from "lucide-react";
+import { Crown, Users, Check, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard, Repeat, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
@@ -9,6 +9,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+
+interface MpRecurringPlan {
+  id: string;
+  reason: string;
+  amount: number;
+  frequency: number;
+  frequency_type: string;
+  status: string;
+  mp_preapproval_plan_id: string;
+  init_point: string | null;
+  plan_id: string | null;
+}
 
 interface Plan {
   id: string;
@@ -45,6 +57,9 @@ export default function Assinaturas() {
   const [subFilter, setSubFilter] = useState<SubFilter>("todos");
   const [clientSearch, setClientSearch] = useState("");
   const [shopId, setShopId] = useState<string | null>(null);
+  const [recurringPlans, setRecurringPlans] = useState<MpRecurringPlan[]>([]);
+  const [mpReady, setMpReady] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -90,6 +105,16 @@ export default function Assinaturas() {
     }));
   };
 
+  const fetchRecurring = async () => {
+    if (!user) return;
+    const [{ data: rp }, { data: mp }] = await Promise.all([
+      supabase.from("mp_recurring_plans").select("*").eq("admin_user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("mp_settings").select("active").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setRecurringPlans((rp || []) as MpRecurringPlan[]);
+    setMpReady(!!mp?.active);
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -97,6 +122,7 @@ export default function Assinaturas() {
       setShopId(data?.id || null);
       fetchPlans();
       fetchSubscribers();
+      fetchRecurring();
     })();
   }, [user]);
 
@@ -165,6 +191,28 @@ export default function Assinaturas() {
     fetchPlans();
   };
 
+  const makeRecurring = async (plan: Plan) => {
+    if (!mpReady) { toast.error("Configure o Mercado Pago primeiro"); return; }
+    setConvertingId(plan.id);
+    const { data, error } = await supabase.functions.invoke("mp-create-preapproval-plan", {
+      body: { reason: plan.name, amount: Number(plan.price), frequency: 1, frequency_type: plan.period?.includes("dia") ? "days" : "months", plan_id: plan.id },
+    });
+    setConvertingId(null);
+    if (error || (data as any)?.error) { toast.error(((data as any)?.error) || error?.message || "Erro"); return; }
+    toast.success("Plano recorrente criado no Mercado Pago!");
+    fetchRecurring();
+  };
+
+  const removeRecurring = async (id: string) => {
+    if (!confirm("Remover este plano recorrente?")) return;
+    const { error } = await supabase.from("mp_recurring_plans").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Removido");
+    fetchRecurring();
+  };
+
+  const copy = (text: string) => { navigator.clipboard.writeText(text); toast.success("Link copiado!"); };
+
   const isExpired = (s: SubscriberRow) => !!s.expires_at && new Date(s.expires_at) < new Date() && s.status !== "ativo";
   const filteredSubscribers = subscribers.filter((s) => {
     const term = clientSearch.trim().toLowerCase();
@@ -232,6 +280,37 @@ export default function Assinaturas() {
                 </li>
               ))}
             </ul>
+            {(() => {
+              const rec = recurringPlans.find(r => r.plan_id === plan.id);
+              if (rec) {
+                return (
+                  <div className="border-t border-border/50 pt-3 mt-2 space-y-2">
+                    <p className="text-xs text-success flex items-center gap-1"><Repeat className="h-3 w-3" /> Recorrente ativo no MP</p>
+                    {rec.init_point && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <a href={rec.init_point} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                          Link de assinatura <ExternalLink className="h-3 w-3" />
+                        </a>
+                        <button onClick={() => copy(rec.init_point!)} className="text-muted-foreground hover:text-primary"><Copy className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => removeRecurring(rec.id)} className="ml-auto text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!mpReady || convertingId === plan.id}
+                  onClick={() => makeRecurring(plan)}
+                  className="w-full gap-2"
+                >
+                  <Repeat className="h-3.5 w-3.5" />
+                  {convertingId === plan.id ? "Criando no MP..." : mpReady ? "Tornar recorrente no MP" : "Configure o MP primeiro"}
+                </Button>
+              );
+            })()}
           </motion.div>
         ))}
         {plans.length === 0 && !loading && (

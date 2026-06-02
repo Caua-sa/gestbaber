@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard, Store, TrendingUp, Boxes } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Globe, Sparkles, LogOut, UserCog, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,10 +17,11 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Agendamento", url: "/agendamento", icon: Calendar },
+  { title: "Clientes", url: "/admin/clientes", icon: Users },
   { title: "Barbeiros", url: "/admin/barbeiros", icon: Scissors },
   { title: "Cortes & Preços", url: "/admin/servicos", icon: Scissors },
   { title: "Ganhos Barbeiros", url: "/admin/ganhos-barbeiros", icon: TrendingUp },
-  { title: "Assinaturas", url: "/assinaturas", icon: Users },
+  { title: "Assinaturas", url: "/assinaturas", icon: Crown },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Insumos", url: "/admin/insumos", icon: Boxes },
