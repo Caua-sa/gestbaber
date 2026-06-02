@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Users, Check, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard } from "lucide-react";
+import { Crown, Users, Check, Plus, Pencil, Trash2, Filter, CalendarClock, CreditCard, Repeat, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
@@ -9,6 +9,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+
+interface MpRecurringPlan {
+  id: string;
+  reason: string;
+  amount: number;
+  frequency: number;
+  frequency_type: string;
+  status: string;
+  mp_preapproval_plan_id: string;
+  init_point: string | null;
+  plan_id: string | null;
+}
 
 interface Plan {
   id: string;
