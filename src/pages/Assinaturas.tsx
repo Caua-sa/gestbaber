@@ -57,6 +57,9 @@ export default function Assinaturas() {
   const [subFilter, setSubFilter] = useState<SubFilter>("todos");
   const [clientSearch, setClientSearch] = useState("");
   const [shopId, setShopId] = useState<string | null>(null);
+  const [recurringPlans, setRecurringPlans] = useState<MpRecurringPlan[]>([]);
+  const [mpReady, setMpReady] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -102,6 +105,16 @@ export default function Assinaturas() {
     }));
   };
 
+  const fetchRecurring = async () => {
+    if (!user) return;
+    const [{ data: rp }, { data: mp }] = await Promise.all([
+      supabase.from("mp_recurring_plans").select("*").eq("admin_user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("mp_settings").select("active").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setRecurringPlans((rp || []) as MpRecurringPlan[]);
+    setMpReady(!!mp?.active);
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -109,6 +122,7 @@ export default function Assinaturas() {
       setShopId(data?.id || null);
       fetchPlans();
       fetchSubscribers();
+      fetchRecurring();
     })();
   }, [user]);
 
