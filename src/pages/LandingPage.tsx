@@ -388,6 +388,28 @@ export default function LandingPage() {
       <footer className="py-8 px-4 border-t border-border text-center text-muted-foreground text-sm">
         © {new Date().getFullYear()} {shop.name} — Todos os direitos reservados.
       </footer>
+
+      <Dialog open={quickOpen} onOpenChange={(o) => { setQuickOpen(o); if (!o) setSubscribing(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl gold-text">Assinar agora</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Preencha rapidinho e você será levado direto ao Mercado Pago para concluir a assinatura mensal recorrente.
+          </p>
+          <form onSubmit={handleQuickSubscribe} className="space-y-3 mt-2">
+            <Input placeholder="Seu nome" value={qName} onChange={(e) => setQName(e.target.value)} required className="bg-secondary border-border" />
+            <Input type="email" placeholder="E-mail" value={qEmail} onChange={(e) => setQEmail(e.target.value)} required className="bg-secondary border-border" />
+            <Input type="password" placeholder="Crie uma senha (mín. 6)" value={qPassword} onChange={(e) => setQPassword(e.target.value)} required minLength={6} className="bg-secondary border-border" />
+            <Button type="submit" disabled={!!subscribing} className="w-full gold-gradient text-primary-foreground font-semibold">
+              {subscribing ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Indo para o Mercado Pago...</>) : "Ir para o Mercado Pago"}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Já tem conta? <Link to="/cliente/login" className="text-primary hover:underline">Entrar</Link>
+            </p>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
