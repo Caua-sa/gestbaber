@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Scissors, MapPin, Phone, Instagram, Facebook, MessageCircle, Star, ChevronRight, Crown, Check, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -41,6 +43,11 @@ export default function LandingPage() {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
+  const [qName, setQName] = useState("");
+  const [qEmail, setQEmail] = useState("");
+  const [qPassword, setQPassword] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -84,13 +91,8 @@ export default function LandingPage() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  const subscribe = async (planId: string) => {
+  const startMpSubscription = async (planId: string) => {
     if (!shop) return;
-    if (!user) {
-      toast.info("Faça login para assinar");
-      navigate(`/cliente/login?redirect=${encodeURIComponent(`/?plan=${planId}`)}`);
-      return;
-    }
     setSubscribing(planId);
     try {
       const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
@@ -100,6 +102,46 @@ export default function LandingPage() {
       window.location.href = data.init_point;
     } catch (err: any) {
       toast.error(err.message || "Erro ao iniciar assinatura");
+      setSubscribing(null);
+    }
+  };
+
+  const subscribe = async (planId: string) => {
+    if (!shop) return;
+    if (!user) {
+      // Cadastro rápido inline para ir direto pro Mercado Pago
+      setPendingPlanId(planId);
+      setQuickOpen(true);
+      return;
+    }
+    startMpSubscription(planId);
+  };
+
+  const handleQuickSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingPlanId) return;
+    setSubscribing(pendingPlanId);
+    try {
+      // Tenta criar conta; se já existir, faz login.
+      const signUp = await supabase.auth.signUp({
+        email: qEmail,
+        password: qPassword,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: qName },
+        },
+      });
+      if (signUp.error && !/already/i.test(signUp.error.message)) {
+        throw signUp.error;
+      }
+      if (!signUp.data.session) {
+        const signIn = await supabase.auth.signInWithPassword({ email: qEmail, password: qPassword });
+        if (signIn.error) throw signIn.error;
+      }
+      setQuickOpen(false);
+      await startMpSubscription(pendingPlanId);
+    } catch (err: any) {
+      toast.error(err.message || "Não foi possível iniciar");
       setSubscribing(null);
     }
   };
@@ -346,6 +388,28 @@ export default function LandingPage() {
       <footer className="py-8 px-4 border-t border-border text-center text-muted-foreground text-sm">
         © {new Date().getFullYear()} {shop.name} — Todos os direitos reservados.
       </footer>
+
+      <Dialog open={quickOpen} onOpenChange={(o) => { setQuickOpen(o); if (!o) setSubscribing(null); }}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl gold-text">Assinar agora</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Preencha rapidinho e você será levado direto ao Mercado Pago para concluir a assinatura mensal recorrente.
+          </p>
+          <form onSubmit={handleQuickSubscribe} className="space-y-3 mt-2">
+            <Input placeholder="Seu nome" value={qName} onChange={(e) => setQName(e.target.value)} required className="bg-secondary border-border" />
+            <Input type="email" placeholder="E-mail" value={qEmail} onChange={(e) => setQEmail(e.target.value)} required className="bg-secondary border-border" />
+            <Input type="password" placeholder="Crie uma senha (mín. 6)" value={qPassword} onChange={(e) => setQPassword(e.target.value)} required minLength={6} className="bg-secondary border-border" />
+            <Button type="submit" disabled={!!subscribing} className="w-full gold-gradient text-primary-foreground font-semibold">
+              {subscribing ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Indo para o Mercado Pago...</>) : "Ir para o Mercado Pago"}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Já tem conta? <Link to="/cliente/login" className="text-primary hover:underline">Entrar</Link>
+            </p>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
