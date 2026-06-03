@@ -91,13 +91,8 @@ export default function LandingPage() {
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  const subscribe = async (planId: string) => {
+  const startMpSubscription = async (planId: string) => {
     if (!shop) return;
-    if (!user) {
-      toast.info("Faça login para assinar");
-      navigate(`/cliente/login?redirect=${encodeURIComponent(`/?plan=${planId}`)}`);
-      return;
-    }
     setSubscribing(planId);
     try {
       const { data, error } = await supabase.functions.invoke("mp-create-subscription", {
@@ -107,6 +102,46 @@ export default function LandingPage() {
       window.location.href = data.init_point;
     } catch (err: any) {
       toast.error(err.message || "Erro ao iniciar assinatura");
+      setSubscribing(null);
+    }
+  };
+
+  const subscribe = async (planId: string) => {
+    if (!shop) return;
+    if (!user) {
+      // Cadastro rápido inline para ir direto pro Mercado Pago
+      setPendingPlanId(planId);
+      setQuickOpen(true);
+      return;
+    }
+    startMpSubscription(planId);
+  };
+
+  const handleQuickSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingPlanId) return;
+    setSubscribing(pendingPlanId);
+    try {
+      // Tenta criar conta; se já existir, faz login.
+      const signUp = await supabase.auth.signUp({
+        email: qEmail,
+        password: qPassword,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: qName },
+        },
+      });
+      if (signUp.error && !/already/i.test(signUp.error.message)) {
+        throw signUp.error;
+      }
+      if (!signUp.data.session) {
+        const signIn = await supabase.auth.signInWithPassword({ email: qEmail, password: qPassword });
+        if (signIn.error) throw signIn.error;
+      }
+      setQuickOpen(false);
+      await startMpSubscription(pendingPlanId);
+    } catch (err: any) {
+      toast.error(err.message || "Não foi possível iniciar");
       setSubscribing(null);
     }
   };
