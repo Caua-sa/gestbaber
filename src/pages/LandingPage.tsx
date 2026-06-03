@@ -43,6 +43,11 @@ export default function LandingPage() {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
+  const [qName, setQName] = useState("");
+  const [qEmail, setQEmail] = useState("");
+  const [qPassword, setQPassword] = useState("");
 
   useEffect(() => {
     (async () => {
