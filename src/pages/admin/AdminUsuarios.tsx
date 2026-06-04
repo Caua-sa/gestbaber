@@ -54,7 +54,12 @@ export default function AdminUsuarios() {
   };
 
   useEffect(() => {
-    if (!ownerLoading) loadUsers();
+    if (ownerLoading) return;
+    if (!isOwner) {
+      setLoading(false);
+      return;
+    }
+    loadUsers();
   }, [ownerLoading, isOwner]);
 
   const resetForm = () => {
@@ -103,12 +108,16 @@ export default function AdminUsuarios() {
     setCreating(false);
   };
 
-  if (ownerLoading || loading) {
+  if (ownerLoading) {
     return <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...</div>;
   }
 
   if (!isOwner) {
     return <div className="text-destructive font-display text-xl">Acesso restrito ao dono da barbearia.</div>;
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...</div>;
   }
 
   const handleDelete = async (user_id: string, email: string) => {
