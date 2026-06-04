@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 interface Insumo {
@@ -27,6 +28,7 @@ const UNITS = ["un", "ml", "L", "g", "kg", "cx", "pct"];
 
 export default function AdminInsumos() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [items, setItems] = useState<Insumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -36,12 +38,12 @@ export default function AdminInsumos() {
   const [form, setForm] = useState(empty);
 
   const fetchAll = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("insumos").select("*").eq("owner_id", user.id).order("name");
+    if (!user || !ownerId) return;
+    const { data } = await supabase.from("insumos").select("*").eq("owner_id", ownerId).order("name");
     setItems((data || []) as Insumo[]);
     setLoading(false);
   };
-  useEffect(() => { fetchAll(); }, [user]);
+  useEffect(() => { fetchAll(); }, [user, ownerId]);
 
   const openCreate = () => { setEditing(null); setForm(empty); setOpen(true); };
   const openEdit = (i: Insumo) => {
@@ -54,7 +56,7 @@ export default function AdminInsumos() {
   };
 
   const save = async () => {
-    if (!user || !form.name.trim()) { toast.error("Nome é obrigatório"); return; }
+    if (!user || !ownerId || !form.name.trim()) { toast.error("Nome é obrigatório"); return; }
     const payload: any = {
       name: form.name.trim(),
       unit: form.unit,
@@ -66,7 +68,7 @@ export default function AdminInsumos() {
     };
     const { error } = editing
       ? await supabase.from("insumos").update(payload).eq("id", editing.id)
-      : await supabase.from("insumos").insert({ ...payload, owner_id: user.id });
+      : await supabase.from("insumos").insert({ ...payload, owner_id: ownerId });
     if (error) { toast.error(error.message); return; }
     toast.success(editing ? "Insumo atualizado" : "Insumo cadastrado");
     setOpen(false);
