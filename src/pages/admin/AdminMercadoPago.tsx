@@ -7,10 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 export default function AdminMercadoPago() {
   const { user } = useAuth();
+  const { ownerId, isOwner, loading: ownerLoading } = useAccountOwner();
   const [accessToken, setAccessToken] = useState("");
   const [publicKey, setPublicKey] = useState("");
   const [active, setActive] = useState(true);
@@ -19,31 +21,32 @@ export default function AdminMercadoPago() {
   const [exists, setExists] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     (async () => {
-      const { data: s } = await supabase.from("mp_settings").select("*").eq("user_id", user.id).maybeSingle();
+      const { data: s } = await supabase.from("mp_settings").select("*").eq("user_id", ownerId).maybeSingle();
       if (s) { setAccessToken(s.access_token); setPublicKey(s.public_key); setActive(s.active); setExists(true); }
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, ownerId]);
 
   const save = async () => {
-    if (!user) return;
+    if (!user || !ownerId || !isOwner) return;
     if (!accessToken.trim() || !publicKey.trim()) {
       toast.error("Preencha Access Token e Public Key");
       return;
     }
     setSaving(true);
-    const payload = { user_id: user.id, access_token: accessToken.trim(), public_key: publicKey.trim(), active };
+    const payload = { user_id: ownerId, access_token: accessToken.trim(), public_key: publicKey.trim(), active };
     const { error } = exists
-      ? await supabase.from("mp_settings").update(payload).eq("user_id", user.id)
+      ? await supabase.from("mp_settings").update(payload).eq("user_id", ownerId)
       : await supabase.from("mp_settings").insert(payload);
     if (error) toast.error("Erro ao salvar: " + error.message);
     else { toast.success("Configurações salvas com sucesso!"); setExists(true); }
     setSaving(false);
   };
 
-  if (loading) return <div className="text-muted-foreground">Carregando...</div>;
+  if (loading || ownerLoading) return <div className="text-muted-foreground">Carregando...</div>;
+  if (!isOwner) return <div className="text-destructive font-display text-xl">Apenas o dono da barbearia pode alterar o Mercado Pago.</div>;
 
   return (
     <div className="space-y-6 max-w-3xl">
