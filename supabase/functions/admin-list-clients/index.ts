@@ -25,10 +25,19 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    const { data: role } = await admin
+      .from("user_roles")
+      .select("created_by, role")
+      .eq("user_id", adminId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!role) throw new Error("Acesso negado");
+    const accountOwnerId = role.created_by || adminId;
+
     const { data: shop } = await admin
       .from("barbershops")
       .select("id")
-      .eq("owner_id", adminId)
+      .eq("owner_id", accountOwnerId)
       .maybeSingle();
 
     const shopId = shop?.id || null;
@@ -36,11 +45,11 @@ Deno.serve(async (req) => {
     // Gather user ids from subscriptions (admin's plans/shops) and appointments
     const [{ data: subs }, { data: appts }] = await Promise.all([
       admin.from("subscriptions").select("user_id, plan_id, status, started_at, expires_at, barbershop_id, created_at"),
-      admin.from("appointments").select("user_id, appointment_date, appointment_time, service, status, owner_id, barbershop_id").or(`owner_id.eq.${adminId}${shopId ? `,barbershop_id.eq.${shopId}` : ""}`),
+      admin.from("appointments").select("user_id, appointment_date, appointment_time, service, status, owner_id, barbershop_id").or(`owner_id.eq.${accountOwnerId}${shopId ? `,barbershop_id.eq.${shopId}` : ""}`),
     ]);
 
     // Filter subs to admin's plans/shops
-    const { data: ownedPlans } = await admin.from("plans").select("id").eq("owner_id", adminId);
+    const { data: ownedPlans } = await admin.from("plans").select("id").eq("owner_id", accountOwnerId);
     const ownedPlanIds = new Set((ownedPlans || []).map((p) => p.id));
     const filteredSubs = (subs || []).filter(
       (s) => (shopId && s.barbershop_id === shopId) || ownedPlanIds.has(s.plan_id),
