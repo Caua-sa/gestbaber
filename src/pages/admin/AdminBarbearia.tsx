@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 export default function AdminBarbearia() {
   const { user } = useAuth();
-  const { ownerId } = useAccountOwner();
+  const { ownerId, isOwner } = useAccountOwner();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -83,6 +83,7 @@ export default function AdminBarbearia() {
 
   const handleSave = async () => {
     if (!user || !ownerId || !shop) return;
+    if (!isOwner) return toast.error("Apenas o dono pode alterar a identidade da barbearia");
     if (!shop.name?.trim()) return toast.error("Nome obrigatório");
     setSaving(true);
     const payload = {
@@ -119,6 +120,7 @@ export default function AdminBarbearia() {
       <div>
         <h1 className="text-4xl font-display gold-text">Minha Barbearia</h1>
         <p className="text-muted-foreground text-sm mt-1">Identidade pública do seu negócio</p>
+        {!isOwner && <p className="text-xs text-destructive mt-2">Funcionários visualizam esta área, mas somente o dono pode salvar alterações.</p>}
       </div>
 
       <motion.div
@@ -245,7 +247,7 @@ export default function AdminBarbearia() {
         )}
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving} className="gold-gradient text-primary-foreground">
+          <Button onClick={handleSave} disabled={saving || !isOwner} className="gold-gradient text-primary-foreground">
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Salvar alterações"}
           </Button>
         </div>
