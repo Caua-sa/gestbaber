@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const normalizeRole = (role?: string) => role === "admin" ? "admin" : "user";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -37,7 +39,7 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
-      .select("role")
+      .select("role, created_by")
       .eq("user_id", caller.id)
       .eq("role", "admin")
       .maybeSingle();
@@ -49,10 +51,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    const accountOwnerId = roleData.created_by || caller.id;
+    const callerIsOwner = accountOwnerId === caller.id;
+
     const { action, ...body } = await req.json();
 
+    if (!callerIsOwner) {
+      return new Response(JSON.stringify({ error: "Somente o dono da barbearia pode controlar acessos" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "create") {
-      const { email, password, full_name, role } = body;
+      const { email, password, full_name } = body;
+      const role = normalizeRole(body.role);
 
       // Create user
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -69,14 +82,14 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Assign role, tracking which admin created this user
-      if (role) {
-        await adminClient.from("user_roles").insert({
-          user_id: newUser.user.id,
-          role,
-          created_by: caller.id,
-        });
-      }
+      await adminClient.from("profiles").upsert({ user_id: newUser.user.id, full_name: full_name || "" }, { onConflict: "user_id" });
+
+      // Assign role, tracking the barbershop owner who created this login.
+      await adminClient.from("user_roles").insert({
+        user_id: newUser.user.id,
+        role,
+        created_by: accountOwnerId,
+      });
 
       return new Response(JSON.stringify({ user: newUser.user }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,7 +101,7 @@ Deno.serve(async (req) => {
       const { data: roles } = await adminClient
         .from("user_roles")
         .select("user_id, role, created_by")
-        .eq("created_by", caller.id);
+        .eq("created_by", accountOwnerId);
 
       const { data: profiles } = await adminClient
         .from("profiles")
@@ -127,7 +140,7 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .select("user_id")
         .eq("user_id", user_id)
-        .eq("created_by", caller.id)
+        .eq("created_by", accountOwnerId)
         .maybeSingle();
 
       if (!ownedRole) {
@@ -147,10 +160,61 @@ Deno.serve(async (req) => {
 
     if (action === "update_role") {
       const { user_id, role } = body;
-      // Delete existing roles and insert new one
+      const safeRole = normalizeRole(role);
+      const { data: ownedRole } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("user_id", user_id)
+        .eq("created_by", accountOwnerId)
+        .maybeSingle();
+      if (!ownedRole) {
+        return new Response(JSON.stringify({ error: "Usuário não pertence à sua barbearia" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       await adminClient.from("user_roles").delete().eq("user_id", user_id);
+      await adminClient.from("user_roles").insert({ user_id, role: safeRole, created_by: accountOwnerId });
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "update") {
+      const { user_id, email, password, full_name, role } = body;
+      const { data: ownedRole } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("user_id", user_id)
+        .eq("created_by", accountOwnerId)
+        .maybeSingle();
+      if (!ownedRole) {
+        return new Response(JSON.stringify({ error: "Usuário não pertence à sua barbearia" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const attrs: Record<string, unknown> = {};
+      if (email) attrs.email = email;
+      if (password) attrs.password = password;
+      if (full_name !== undefined) attrs.user_metadata = { full_name };
+      if (Object.keys(attrs).length) {
+        const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, attrs);
+        if (updateError) {
+          return new Response(JSON.stringify({ error: updateError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+      if (full_name !== undefined) {
+        await adminClient.from("profiles").upsert({ user_id, full_name: full_name || "" }, { onConflict: "user_id" });
+      }
       if (role) {
-        await adminClient.from("user_roles").insert({ user_id, role });
+        const safeRole = normalizeRole(role);
+        await adminClient.from("user_roles").delete().eq("user_id", user_id);
+        await adminClient.from("user_roles").insert({ user_id, role: safeRole, created_by: accountOwnerId });
       }
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
