@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 interface Product {
@@ -28,6 +29,7 @@ interface Product {
 
 export default function Estoque() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -38,13 +40,13 @@ export default function Estoque() {
   const [form, setForm] = useState(empty);
 
   const fetchProducts = async () => {
-    if (!user) return;
-    const { data } = await supabase.from("products").select("*").eq("owner_id", user.id).order("name");
+    if (!user || !ownerId) return;
+    const { data } = await supabase.from("products").select("*").eq("owner_id", ownerId).order("name");
     if (data) setProducts(data as Product[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchProducts(); }, [user]);
+  useEffect(() => { fetchProducts(); }, [user, ownerId]);
 
   const list = products.filter(p => tab === "loja" ? p.visible_on_site : !p.visible_on_site);
   const lowStock = list.filter(p => p.stock <= p.min_stock).length;
@@ -68,7 +70,7 @@ export default function Estoque() {
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const payload: any = {
       name: form.name, category: form.category || "Outros",
       stock: Number(form.stock), min_stock: Number(form.minStock),
@@ -80,7 +82,7 @@ export default function Estoque() {
       if (error) { toast.error("Erro ao atualizar"); return; }
       toast.success("Item atualizado!");
     } else {
-      payload.owner_id = user.id;
+      payload.owner_id = ownerId;
       const { error } = await supabase.from("products").insert(payload);
       if (error) { toast.error("Erro ao criar"); return; }
       toast.success("Item criado!");
