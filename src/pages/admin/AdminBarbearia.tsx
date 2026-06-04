@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 export default function AdminBarbearia() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -18,17 +20,17 @@ export default function AdminBarbearia() {
   const [shop, setShop] = useState<any>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     (async () => {
       const { data } = await supabase
         .from("barbershops")
         .select("*")
-        .eq("owner_id", user.id)
+        .eq("owner_id", ownerId)
         .maybeSingle();
-      setShop(data || { owner_id: user.id, name: "", slug: "", active: true, photos: [] });
+      setShop(data || { owner_id: ownerId, name: "", slug: "", active: true, photos: [] });
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, ownerId]);
 
   const slugify = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -80,11 +82,11 @@ export default function AdminBarbearia() {
   };
 
   const handleSave = async () => {
-    if (!user || !shop) return;
+    if (!user || !ownerId || !shop) return;
     if (!shop.name?.trim()) return toast.error("Nome obrigatório");
     setSaving(true);
     const payload = {
-      owner_id: user.id,
+      owner_id: ownerId,
       name: shop.name.trim(),
       slug: shop.slug?.trim() || slugify(shop.name),
       description: shop.description || null,
@@ -104,7 +106,7 @@ export default function AdminBarbearia() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Barbearia salva!");
-    const { data } = await supabase.from("barbershops").select("*").eq("owner_id", user.id).maybeSingle();
+    const { data } = await supabase.from("barbershops").select("*").eq("owner_id", ownerId).maybeSingle();
     if (data) setShop(data);
   };
 
