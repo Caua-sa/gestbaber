@@ -5,6 +5,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getRequestOrigin(req: Request) {
+  const origin = req.headers.get("origin");
+  if (origin && origin !== "null") return origin;
+  const referer = req.headers.get("referer");
+  if (referer) {
+    try { return new URL(referer).origin; } catch { /* ignore */ }
+  }
+  return "https://barbermg.lovable.app";
+}
+
+function errorMessage(err: unknown) {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string") return err;
+  try { return JSON.stringify(err); } catch { return "Erro desconhecido"; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -36,6 +52,8 @@ Deno.serve(async (req) => {
     if (planErr) throw planErr;
     if (!plan) throw new Error("Plano não encontrado");
 
+    if (plan.owner_id !== admin_user_id) throw new Error("Plano não pertence a esta barbearia");
+
     // Get MP credentials
     const { data: settings } = await admin
       .from("mp_settings")
@@ -46,7 +64,7 @@ Deno.serve(async (req) => {
       throw new Error("Esta barbearia ainda não configurou o Mercado Pago");
     }
 
-    const origin = req.headers.get("origin") || "";
+    const origin = getRequestOrigin(req);
     const backUrl = `${origin}/cliente?tab=planos`;
 
     // Create internal subscription record (pending)
@@ -91,7 +109,8 @@ Deno.serve(async (req) => {
     const mpData = await mpRes.json();
     if (!mpRes.ok) {
       console.error("MP preapproval error", mpData);
-      throw new Error(mpData.message || mpData.error || "Falha ao criar assinatura recorrente no Mercado Pago");
+      const cause = mpData.message || mpData.error || mpData.cause?.[0]?.description;
+      throw new Error(cause || "Falha ao criar assinatura recorrente no Mercado Pago");
     }
     const checkoutUrl = mpData.init_point || mpData.sandbox_init_point;
     if (!checkoutUrl) throw new Error("Mercado Pago não retornou link de checkout");
@@ -114,7 +133,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Erro desconhecido";
+    const msg = errorMessage(err);
     console.error("mp-create-subscription error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
       status: 200,
