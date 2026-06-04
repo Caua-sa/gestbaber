@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -45,6 +46,7 @@ const paymentMethods = [
 
 export default function Vendas() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
@@ -58,11 +60,11 @@ export default function Vendas() {
   const [mpLink, setMpLink] = useState<string | null>(null);
 
   const fetchProducts = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const { data } = await supabase
       .from("products")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("owner_id", ownerId)
       .eq("active", true)
       .order("name");
     if (data) setProducts(data);
@@ -70,11 +72,11 @@ export default function Vendas() {
   };
 
   const fetchRecentSales = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const { data } = await supabase
       .from("transactions")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("owner_id", ownerId)
       .eq("category", "Venda")
       .order("created_at", { ascending: false })
       .limit(20);
@@ -90,7 +92,7 @@ export default function Vendas() {
     }
   };
 
-  useEffect(() => { if (user) { fetchProducts(); fetchRecentSales(); } }, [user]);
+  useEffect(() => { if (user && ownerId) { fetchProducts(); fetchRecentSales(); } }, [user, ownerId]);
 
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -133,7 +135,7 @@ export default function Vendas() {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const finalizeSale = async () => {
-    if (cart.length === 0 || !user) return;
+    if (cart.length === 0 || !user || !ownerId) return;
     setProcessing(true);
     try {
       const itemNames = cart.map(c => `${c.quantity}x ${c.product.name}`).join(", ");
@@ -146,7 +148,8 @@ export default function Vendas() {
         category: "Venda",
         transaction_date: new Date().toISOString().split("T")[0],
         notes: `${paymentMethod}|${saleType}|${cart.reduce((s, c) => s + c.quantity, 0)}|${productIds}`,
-        owner_id: user.id,
+        owner_id: ownerId,
+        created_by: user.id,
       });
       if (txError) throw txError;
 
@@ -167,7 +170,7 @@ export default function Vendas() {
           body: {
             amount: total,
             description: `Venda PDV: ${itemNames}`.slice(0, 200),
-            admin_user_id: user.id,
+            admin_user_id: ownerId,
             source: "pdv",
           },
         });
