@@ -7,6 +7,7 @@ import { StatCard } from "@/components/StatCard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 
@@ -49,6 +50,7 @@ interface SubscriberRow {
 
 export default function Assinaturas() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -69,14 +71,14 @@ export default function Assinaturas() {
   const [popular, setPopular] = useState(false);
 
   const fetchPlans = async () => {
-    const query = user ? supabase.from("plans").select("*").eq("owner_id", user.id).order("price") : supabase.from("plans").select("*").order("price");
+    const query = ownerId ? supabase.from("plans").select("*").eq("owner_id", ownerId).order("price") : supabase.from("plans").select("*").order("price");
     const { data } = await query;
     if (data) setPlans(data.map(p => ({ ...p, features: (p.features as any) || [] })));
     setLoading(false);
   };
 
   const fetchSubscribers = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const { data: subs } = await supabase
       .from("subscriptions")
       .select("id,user_id,plan_id,status,started_at,expires_at,barbershop_id")
@@ -106,25 +108,25 @@ export default function Assinaturas() {
   };
 
   const fetchRecurring = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const [{ data: rp }, { data: mp }] = await Promise.all([
-      supabase.from("mp_recurring_plans").select("*").eq("admin_user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("mp_settings").select("active").eq("user_id", user.id).maybeSingle(),
+      supabase.from("mp_recurring_plans").select("*").eq("admin_user_id", ownerId).order("created_at", { ascending: false }),
+      supabase.from("mp_settings").select("active").eq("user_id", ownerId).maybeSingle(),
     ]);
     setRecurringPlans((rp || []) as MpRecurringPlan[]);
     setMpReady(!!mp?.active);
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     (async () => {
-      const { data } = await supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle();
+      const { data } = await supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle();
       setShopId(data?.id || null);
       fetchPlans();
       fetchSubscribers();
       fetchRecurring();
     })();
-  }, [user]);
+  }, [user, ownerId]);
 
   const openCreate = () => {
     setEditingPlan(null);
@@ -143,7 +145,7 @@ export default function Assinaturas() {
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const featuresArr = features.split("\n").map(f => f.trim()).filter(Boolean);
     const payload: any = {
       name,
@@ -159,7 +161,7 @@ export default function Assinaturas() {
       if (error) { toast.error("Erro ao atualizar plano"); return; }
       toast.success("Plano atualizado!");
     } else {
-      payload.owner_id = user.id;
+      payload.owner_id = ownerId;
       payload.barbershop_id = shopId;
       const { error } = await supabase.from("plans").insert(payload);
       if (error) { toast.error("Erro ao criar plano"); return; }
