@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 interface Barber {
@@ -17,6 +18,7 @@ interface Barber {
 
 export default function AdminBarbeiros() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [list, setList] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -26,16 +28,16 @@ export default function AdminBarbeiros() {
   const [shopId, setShopId] = useState<string | null>(null);
 
   const fetchAll = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     setLoading(true);
-    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle();
+    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle();
     setShopId(shop?.id || null);
-    const { data } = await supabase.from("barbers").select("*").eq("owner_id", user.id).order("name");
+    const { data } = await supabase.from("barbers").select("*").eq("owner_id", ownerId).order("name");
     setList(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, [user]);
+  useEffect(() => { fetchAll(); }, [user, ownerId]);
 
   const openNew = () => {
     setEditing(null);
@@ -51,13 +53,13 @@ export default function AdminBarbeiros() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !ownerId) return;
     setSaving(true);
     const payload = {
       name: form.name,
       commission_pct: form.commission_pct,
       active: form.active,
-      owner_id: user.id,
+      owner_id: ownerId,
       barbershop_id: shopId,
     };
     const { error } = editing
