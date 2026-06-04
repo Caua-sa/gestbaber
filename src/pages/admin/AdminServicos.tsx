@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 interface Service {
@@ -18,6 +19,7 @@ interface Service {
 
 export default function AdminServicos() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [list, setList] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -27,16 +29,16 @@ export default function AdminServicos() {
   const [shopId, setShopId] = useState<string | null>(null);
 
   const fetchAll = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     setLoading(true);
-    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle();
+    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle();
     setShopId(shop?.id || null);
-    const { data } = await supabase.from("services").select("*").eq("owner_id", user.id).order("name");
+    const { data } = await supabase.from("services").select("*").eq("owner_id", ownerId).order("name");
     setList(data || []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, [user]);
+  useEffect(() => { fetchAll(); }, [user, ownerId]);
 
   const openNew = () => {
     setEditing(null);
@@ -52,9 +54,9 @@ export default function AdminServicos() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !ownerId) return;
     setSaving(true);
-    const payload = { ...form, owner_id: user.id, barbershop_id: shopId };
+    const payload = { ...form, owner_id: ownerId, barbershop_id: shopId };
     const { error } = editing
       ? await supabase.from("services").update(payload).eq("id", editing.id)
       : await supabase.from("services").insert(payload);

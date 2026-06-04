@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 export default function AdminBarbearia() {
   const { user } = useAuth();
+  const { ownerId, isOwner } = useAccountOwner();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -18,17 +20,17 @@ export default function AdminBarbearia() {
   const [shop, setShop] = useState<any>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     (async () => {
       const { data } = await supabase
         .from("barbershops")
         .select("*")
-        .eq("owner_id", user.id)
+        .eq("owner_id", ownerId)
         .maybeSingle();
-      setShop(data || { owner_id: user.id, name: "", slug: "", active: true, photos: [] });
+      setShop(data || { owner_id: ownerId, name: "", slug: "", active: true, photos: [] });
       setLoading(false);
     })();
-  }, [user]);
+  }, [user, ownerId]);
 
   const slugify = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -80,11 +82,12 @@ export default function AdminBarbearia() {
   };
 
   const handleSave = async () => {
-    if (!user || !shop) return;
+    if (!user || !ownerId || !shop) return;
+    if (!isOwner) return toast.error("Apenas o dono pode alterar a identidade da barbearia");
     if (!shop.name?.trim()) return toast.error("Nome obrigatório");
     setSaving(true);
     const payload = {
-      owner_id: user.id,
+      owner_id: ownerId,
       name: shop.name.trim(),
       slug: shop.slug?.trim() || slugify(shop.name),
       description: shop.description || null,
@@ -104,7 +107,7 @@ export default function AdminBarbearia() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Barbearia salva!");
-    const { data } = await supabase.from("barbershops").select("*").eq("owner_id", user.id).maybeSingle();
+    const { data } = await supabase.from("barbershops").select("*").eq("owner_id", ownerId).maybeSingle();
     if (data) setShop(data);
   };
 
@@ -117,6 +120,7 @@ export default function AdminBarbearia() {
       <div>
         <h1 className="text-4xl font-display gold-text">Minha Barbearia</h1>
         <p className="text-muted-foreground text-sm mt-1">Identidade pública do seu negócio</p>
+        {!isOwner && <p className="text-xs text-destructive mt-2">Funcionários visualizam esta área, mas somente o dono pode salvar alterações.</p>}
       </div>
 
       <motion.div
@@ -243,7 +247,7 @@ export default function AdminBarbearia() {
         )}
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving} className="gold-gradient text-primary-foreground">
+          <Button onClick={handleSave} disabled={saving || !isOwner} className="gold-gradient text-primary-foreground">
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Salvar alterações"}
           </Button>
         </div>

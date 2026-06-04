@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 
 interface Transaction {
@@ -24,6 +25,7 @@ const categories = ["Serviço", "Produto", "Fornecedor", "Aluguel", "Salário", 
 
 export default function Financeiro() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -37,12 +39,13 @@ export default function Financeiro() {
   const [notes, setNotes] = useState("");
 
   const fetchTransactions = async () => {
-    const { data } = await supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).limit(100);
+    if (!ownerId) return;
+    const { data } = await supabase.from("transactions").select("*").eq("owner_id", ownerId).order("transaction_date", { ascending: false }).limit(100);
     if (data) setTransactions(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchTransactions(); }, []);
+  useEffect(() => { fetchTransactions(); }, [ownerId]);
 
   const totalReceita = transactions.filter(t => t.type === "entrada").reduce((s, t) => s + Number(t.value), 0);
   const totalDespesas = transactions.filter(t => t.type === "saída").reduce((s, t) => s + Number(t.value), 0);
@@ -61,14 +64,15 @@ export default function Financeiro() {
   };
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const payload: any = { description: desc, type, value: Number(value), category, transaction_date: date, notes: notes || null };
     if (editing) {
       const { error } = await supabase.from("transactions").update(payload).eq("id", editing.id);
       if (error) { toast.error("Erro ao atualizar"); return; }
       toast.success("Transação atualizada!");
     } else {
-      payload.owner_id = user.id;
+      payload.owner_id = ownerId;
+      payload.created_by = user.id;
       const { error } = await supabase.from("transactions").insert(payload);
       if (error) { toast.error("Erro ao criar"); return; }
       toast.success("Transação criada!");

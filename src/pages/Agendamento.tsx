@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { cn } from "@/lib/utils";
 
 const TIME_SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
@@ -48,6 +49,7 @@ function toISO(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).pa
 
 export default function Agendamento() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<SvcOpt[]>([]);
   const [barbers, setBarbers] = useState<BarberOpt[]>([]);
@@ -66,41 +68,41 @@ export default function Agendamento() {
   const dateISO = useMemo(() => toISO(selectedDate), [selectedDate]);
 
   const fetchMeta = async () => {
-    if (!user) return;
-    const { data: shop } = await supabase.from("barbershops").select("id, name, address, phone").eq("owner_id", user.id).maybeSingle();
+    if (!user || !ownerId) return;
+    const { data: shop } = await supabase.from("barbershops").select("id, name, address, phone").eq("owner_id", ownerId).maybeSingle();
     setShopId(shop?.id || null);
     setShopInfo(shop ? { name: shop.name, address: shop.address, phone: shop.phone } : null);
     const [{ data: svc }, { data: brb }] = await Promise.all([
-      supabase.from("services").select("id,name,price").eq("owner_id", user.id).eq("active", true).order("name"),
-      supabase.from("barbers").select("id,name").eq("owner_id", user.id).eq("active", true).order("name"),
+      supabase.from("services").select("id,name,price").eq("owner_id", ownerId).eq("active", true).order("name"),
+      supabase.from("barbers").select("id,name").eq("owner_id", ownerId).eq("active", true).order("name"),
     ]);
     setServices((svc || []).map((s: any) => ({ ...s, price: Number(s.price) })));
     setBarbers(brb || []);
   };
 
   const fetchAppointments = async () => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     setLoading(true);
     let query = supabase.from("appointments").select("*").eq("appointment_date", dateISO).order("appointment_time");
-    query = shopId ? query.or(`owner_id.eq.${user.id},barbershop_id.eq.${shopId}`) : query.eq("owner_id", user.id);
+    query = shopId ? query.or(`owner_id.eq.${ownerId},barbershop_id.eq.${shopId}`) : query.eq("owner_id", ownerId);
     const { data } = await query;
     setAppointments((data || []) as Appointment[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchMeta(); }, [user]);
-  useEffect(() => { fetchAppointments(); }, [dateISO, user, shopId]);
+  useEffect(() => { fetchMeta(); }, [user, ownerId]);
+  useEffect(() => { fetchAppointments(); }, [dateISO, user, ownerId, shopId]);
 
   const ensureTransaction = async (app: Appointment) => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     const tag = `[appt:${app.id}]`;
     const { data: existing } = await supabase
-      .from("transactions").select("id").eq("owner_id", user.id).ilike("notes", `%${tag}%`).maybeSingle();
+      .from("transactions").select("id").eq("owner_id", ownerId).ilike("notes", `%${tag}%`).maybeSingle();
     if (existing) return;
     const value = Number(app.price || 0);
     if (value <= 0) return;
     await supabase.from("transactions").insert({
-      owner_id: user.id,
+      owner_id: ownerId,
       created_by: user.id,
       type: "entrada",
       category: "Cortes",
@@ -133,14 +135,14 @@ export default function Agendamento() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !ownerId) return;
     const svc = services.find(s => s.id === form.service_id);
     const brb = barbers.find(b => b.id === form.barber_id);
     if (!svc) { toast.error("Escolha um serviço"); return; }
     setSaving(true);
     const notes = `${form.client_name}||${form.client_phone}||${form.notes}`;
     const { error } = await supabase.from("appointments").insert({
-      user_id: user.id, owner_id: user.id, barbershop_id: shopId,
+      user_id: user.id, owner_id: ownerId, barbershop_id: shopId,
       service: svc.name, price: svc.price,
       barber: brb?.name || "Barbeiro", barber_id: brb?.id || null,
       appointment_date: dateISO, appointment_time: form.appointment_time,
@@ -156,7 +158,7 @@ export default function Agendamento() {
 
   const handleWalkIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !ownerId) return;
     const svc = services.find(s => s.id === walk.service_id);
     const brb = barbers.find(b => b.id === walk.barber_id);
     if (!svc) { toast.error("Escolha um serviço"); return; }
@@ -165,7 +167,7 @@ export default function Agendamento() {
     const dateStr = walk.date || toISO(now);
     const timeStr = walk.time || `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
     const { data, error } = await supabase.from("appointments").insert({
-      user_id: user.id, owner_id: user.id, barbershop_id: shopId,
+      user_id: user.id, owner_id: ownerId, barbershop_id: shopId,
       service: svc.name, price: svc.price,
       barber: brb?.name || "Avulso", barber_id: brb?.id || null,
       appointment_date: dateStr, appointment_time: timeStr,

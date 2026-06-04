@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UserPlus, Trash2, Shield, Loader2 } from "lucide-react";
+import { UserPlus, Trash2, Shield, Loader2, Pencil, KeyRound } from "lucide-react";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 
 interface AdminUser {
   user_id: string;
@@ -16,14 +18,17 @@ interface AdminUser {
 }
 
 export default function AdminUsuarios() {
+  const { isOwner, loading: ownerLoading } = useAccountOwner();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
 
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<"user" | "admin">("admin");
 
   const callFn = async (body: any) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -37,6 +42,7 @@ export default function AdminUsuarios() {
   };
 
   const loadUsers = async () => {
+    if (!isOwner) return;
     setLoading(true);
     try {
       const data = await callFn({ action: "list" });
@@ -47,30 +53,72 @@ export default function AdminUsuarios() {
     setLoading(false);
   };
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => {
+    if (ownerLoading) return;
+    if (!isOwner) {
+      setLoading(false);
+      return;
+    }
+    loadUsers();
+  }, [ownerLoading, isOwner]);
+
+  const resetForm = () => {
+    setNewEmail(""); setNewPassword(""); setNewName(""); setNewRole("admin"); setEditing(null);
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setOpen(true);
+  };
+
+  const openEdit = (u: AdminUser) => {
+    setEditing(u);
+    setNewEmail(u.email);
+    setNewName(u.full_name || "");
+    setNewPassword("");
+    setNewRole(u.role === "admin" ? "admin" : "user");
+    setOpen(true);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
     try {
-      // Sempre criamos um "user" (cliente) vinculado à barbearia atual.
-      // Nunca criamos outro admin/barbearia paralela.
-      await callFn({
+      await callFn(editing ? {
+        action: "update",
+        user_id: editing.user_id,
+        email: newEmail,
+        password: newPassword || undefined,
+        full_name: newName,
+        role: newRole,
+      } : {
         action: "create",
         email: newEmail,
         password: newPassword,
         full_name: newName,
-        role: "user",
+        role: newRole,
       });
-      toast.success("Cliente cadastrado com sucesso!");
+      toast.success(editing ? "Acesso atualizado com sucesso!" : "Acesso criado com sucesso!");
       setOpen(false);
-      setNewEmail(""); setNewPassword(""); setNewName("");
+      resetForm();
       loadUsers();
     } catch (err: any) {
       toast.error(err.message);
     }
     setCreating(false);
   };
+
+  if (ownerLoading) {
+    return <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...</div>;
+  }
+
+  if (!isOwner) {
+    return <div className="text-destructive font-display text-xl">Acesso restrito ao dono da barbearia.</div>;
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...</div>;
+  }
 
   const handleDelete = async (user_id: string, email: string) => {
     if (!confirm(`Remover ${email}? Esta ação é irreversível.`)) return;
@@ -84,25 +132,25 @@ export default function AdminUsuarios() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-display gold-text">Clientes da Barbearia</h1>
+          <h1 className="text-4xl font-display gold-text flex items-center gap-2"><KeyRound className="h-7 w-7" /> Controle de Acessos</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Crie contas de clientes vinculadas à sua barbearia. Nenhuma nova barbearia é criada.
+            Área oculta do dono: controle e-mail, senha, login e permissão de funcionários e clientes.
           </p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gold-gradient text-primary-foreground">
+            <Button onClick={openCreate} className="gold-gradient text-primary-foreground">
               <UserPlus className="mr-2 h-4 w-4" />
-              Novo Cliente
+              Novo Acesso
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="font-display text-xl">Cadastrar Cliente</DialogTitle>
+              <DialogTitle className="font-display text-xl">{editing ? "Editar Acesso" : "Cadastrar Acesso"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 mt-2">
               <div>
@@ -115,25 +163,30 @@ export default function AdminUsuarios() {
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Senha</label>
-                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} />
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required={!editing} minLength={6} placeholder={editing ? "Deixe vazio para manter" : "Senha de acesso"} />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Tipo de acesso</label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as "user" | "admin")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Funcionário do painel</SelectItem>
+                    <SelectItem value="user">Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                O cliente acessará via <span className="text-primary">/cliente/login</span> e poderá agendar e assinar planos desta barbearia.
+                Funcionário entra em <span className="text-primary">/admin/login</span> e abre a mesma barbearia. Cliente entra em <span className="text-primary">/cliente/login</span>.
               </p>
               <Button type="submit" className="w-full" disabled={creating}>
-                {creating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Criando...</> : "Cadastrar"}
+                {creating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : editing ? "Salvar alterações" : "Cadastrar"}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
-        </div>
-      ) : (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -159,13 +212,20 @@ export default function AdminUsuarios() {
                     <TableCell>
                       <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
                         <Shield className="h-3 w-3" />
-                        {u.role === "admin" ? "Administrador" : "Cliente"}
+                        {u.role === "admin" ? "Funcionário" : "Cliente"}
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {u.created_at ? new Date(u.created_at).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
                     <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEdit(u)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -181,7 +241,6 @@ export default function AdminUsuarios() {
             </TableBody>
           </Table>
         </div>
-      )}
     </div>
   );
 }
