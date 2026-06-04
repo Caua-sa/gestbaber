@@ -4,6 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountOwner } from "@/hooks/useAccountOwner";
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const PIE_COLORS = ["hsl(38,92%,50%)", "hsl(160,70%,45%)", "hsl(220,70%,55%)", "hsl(340,75%,55%)", "hsl(280,60%,55%)", "hsl(20,80%,55%)"];
@@ -16,13 +17,14 @@ interface RecentCut { id: string; service: string; barber: string; price: number
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { ownerId } = useAccountOwner();
   const [stats, setStats] = useState({ cortesHoje: 0, receitaDia: 0, clientesAtivos: 0, ticketMedio: 0 });
   const [weekData, setWeekData] = useState(WEEK_LABELS.map(day => ({ day, cortes: 0 })));
   const [recent, setRecent] = useState<RecentCut[]>([]);
   const [marginData, setMarginData] = useState<{ name: string; value: number }[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !ownerId) return;
     (async () => {
       const today = new Date(); today.setHours(0,0,0,0);
       const todayISO = toISO(today);
@@ -33,13 +35,13 @@ export default function Dashboard() {
       weekEnd.setDate(weekStart.getDate() + 6);
 
       const [{ data: shop }] = await Promise.all([
-        supabase.from("barbershops").select("id").eq("owner_id", user.id).maybeSingle(),
+        supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle(),
       ]);
       const shopId = shop?.id;
 
       const baseAppt = () => {
         let q = supabase.from("appointments").select("id,service,barber,price,appointment_time,appointment_date,status");
-        q = shopId ? q.or(`owner_id.eq.${user.id},barbershop_id.eq.${shopId}`) : q.eq("owner_id", user.id);
+        q = shopId ? q.or(`owner_id.eq.${ownerId},barbershop_id.eq.${shopId}`) : q.eq("owner_id", ownerId);
         return q;
       };
 
@@ -47,7 +49,7 @@ export default function Dashboard() {
         baseAppt().eq("status", "concluido").eq("appointment_date", todayISO),
         baseAppt().eq("status", "concluido").gte("appointment_date", toISO(weekStart)).lte("appointment_date", toISO(weekEnd)),
         baseAppt().eq("status", "concluido").order("appointment_date", { ascending: false }).order("appointment_time", { ascending: false }).limit(5),
-        supabase.from("transactions").select("value,type").eq("owner_id", user.id).eq("transaction_date", todayISO).eq("type", "entrada"),
+        supabase.from("transactions").select("value,type").eq("owner_id", ownerId).eq("transaction_date", todayISO).eq("type", "entrada"),
         shopId
           ? supabase.from("subscriptions").select("user_id", { count: "exact", head: true }).eq("barbershop_id", shopId).eq("status", "ativo")
           : Promise.resolve({ count: 0 } as any),
@@ -81,7 +83,7 @@ export default function Dashboard() {
       const { data: monthTx } = await supabase
         .from("transactions")
         .select("value,type,category")
-        .eq("owner_id", user.id)
+        .eq("owner_id", ownerId)
         .gte("transaction_date", toISO(monthStart));
       const byCat: Record<string, number> = {};
       (monthTx || []).forEach((t: any) => {
@@ -95,7 +97,7 @@ export default function Dashboard() {
           .filter(d => d.value > 0)
       );
     })();
-  }, [user]);
+  }, [user, ownerId]);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
