@@ -55,9 +55,16 @@ Deno.serve(async (req) => {
       (s) => (shopId && s.barbershop_id === shopId) || ownedPlanIds.has(s.plan_id),
     );
 
+    const { data: ownedClientRoles } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("created_by", accountOwnerId)
+      .eq("role", "user");
+
     const userIds = new Set<string>([
       ...filteredSubs.map((s) => s.user_id),
       ...(appts || []).map((a) => a.user_id),
+      ...((ownedClientRoles || []) as any[]).map((r) => r.user_id),
     ]);
     if (userIds.size === 0) {
       return new Response(JSON.stringify({ clients: [] }), {
