@@ -30,6 +30,7 @@ export default function ClientePortal() {
   const [activeSub, setActiveSub] = useState<ActiveSub | null>(null);
   const [nextAppt, setNextAppt] = useState<any>(null);
   const [profile, setProfile] = useState<{ full_name: string } | null>(null);
+  const [services, setServices] = useState<{ id: string; name: string; price: number; duration_min: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [canceling, setCanceling] = useState(false);
