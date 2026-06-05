@@ -76,6 +76,24 @@ export default function ClientePortal() {
     }
     setNextAppt(apptRes.data);
     setProfile(profRes.data);
+
+    // Load up to 4 services from the user's barbershop for the home preview
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("created_by")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const ownerId = roleRow?.created_by;
+    if (ownerId) {
+      const { data: srv } = await supabase
+        .from("services")
+        .select("id, name, price, duration_min")
+        .eq("owner_id", ownerId)
+        .eq("active", true)
+        .order("price")
+        .limit(4);
+      setServices((srv || []) as any);
+    }
     setLoading(false);
   };
 
