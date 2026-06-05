@@ -64,15 +64,14 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, full_name } = body;
+      const { email, password, full_name, phone } = body;
       const role = normalizeRole(body.role);
 
-      // Create user
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name },
+        user_metadata: { full_name, phone },
       });
 
       if (createError) {
@@ -82,9 +81,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      await adminClient.from("profiles").upsert({ user_id: newUser.user.id, full_name: full_name || "" }, { onConflict: "user_id" });
+      await adminClient.from("profiles").upsert(
+        { user_id: newUser.user.id, full_name: full_name || "", phone: phone || null },
+        { onConflict: "user_id" },
+      );
 
-      // Assign role, tracking the barbershop owner who created this login.
       await adminClient.from("user_roles").insert({
         user_id: newUser.user.id,
         role,
@@ -181,7 +182,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      const { user_id, email, password, full_name, role } = body;
+      const { user_id, email, password, full_name, phone, role } = body;
       const { data: ownedRole } = await adminClient
         .from("user_roles")
         .select("user_id")
@@ -198,7 +199,7 @@ Deno.serve(async (req) => {
       const attrs: Record<string, unknown> = {};
       if (email) attrs.email = email;
       if (password) attrs.password = password;
-      if (full_name !== undefined) attrs.user_metadata = { full_name };
+      if (full_name !== undefined || phone !== undefined) attrs.user_metadata = { full_name, phone };
       if (Object.keys(attrs).length) {
         const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, attrs);
         if (updateError) {
@@ -208,8 +209,11 @@ Deno.serve(async (req) => {
           });
         }
       }
-      if (full_name !== undefined) {
-        await adminClient.from("profiles").upsert({ user_id, full_name: full_name || "" }, { onConflict: "user_id" });
+      if (full_name !== undefined || phone !== undefined) {
+        await adminClient.from("profiles").upsert(
+          { user_id, full_name: full_name || "", phone: phone || null },
+          { onConflict: "user_id" },
+        );
       }
       if (role) {
         const safeRole = normalizeRole(role);
