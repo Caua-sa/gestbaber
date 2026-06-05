@@ -315,8 +315,42 @@ export default function ClientePortal() {
                   <p className="text-xs text-primary mt-1">Toque para agendar →</p>
                 </div>
               )}
+
+              {/* Services preview */}
+              {services.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                      <Scissors className="h-3 w-3" /> Nossos serviços
+                    </p>
+                    <button onClick={() => setTab("agendar")} className="text-xs text-primary hover:underline">
+                      Ver todos →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {services.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => setTab("agendar")}
+                        className="text-left p-3 rounded-lg border border-border hover:border-primary transition-colors"
+                      >
+                        <p className="text-sm font-medium">{s.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                          <span className="text-primary font-semibold">
+                            {Number(s.price).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {s.duration_min}min
+                          </span>
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
+
 
           {tab === "loja" && <ClienteLoja />}
           {tab === "planos" && <ClientePlanos />}
