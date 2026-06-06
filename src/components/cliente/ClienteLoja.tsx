@@ -81,15 +81,19 @@ export function ClienteLoja() {
 
   const insertOrders = async (status: "aguardando_pagamento" | "pendente") => {
     if (!user) return null;
-    const rows = cart.map((c) => ({
-      user_id: user.id,
-      product_id: c.product.id,
-      quantity: c.qty,
-      unit_price: Number(c.product.sell_price),
-      total: c.qty * Number(c.product.sell_price),
-      owner_id: c.product.owner_id,
-      status,
-    }));
+    const factor = birthdayToday ? 1 - DISCOUNT_PERCENT / 100 : 1;
+    const rows = cart.map((c) => {
+      const unit = Number(c.product.sell_price) * factor;
+      return {
+        user_id: user.id,
+        product_id: c.product.id,
+        quantity: c.qty,
+        unit_price: unit,
+        total: c.qty * unit,
+        owner_id: c.product.owner_id,
+        status,
+      };
+    });
     const { error } = await supabase.from("orders").insert(rows);
     if (error) throw error;
     return rows;
