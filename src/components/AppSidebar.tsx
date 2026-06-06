@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ const siteItems = [
   { title: "Minha Barbearia", url: "/admin/barbearia", icon: Store },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },
+  { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
 ];
 
 export function AppSidebar() {

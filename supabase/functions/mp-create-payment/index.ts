@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
     }
 
     // Create MP preference
+    const notificationUrl = `${supabaseUrl}/functions/v1/mp-payment-webhook`;
     const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
@@ -58,11 +59,13 @@ Deno.serve(async (req) => {
         ],
         payer: { email: userData.user.email },
         back_urls: {
-          success: `${req.headers.get("origin") || ""}/cliente/portal`,
-          failure: `${req.headers.get("origin") || ""}/cliente/portal`,
-          pending: `${req.headers.get("origin") || ""}/cliente/portal`,
+          success: `${req.headers.get("origin") || ""}/cliente`,
+          failure: `${req.headers.get("origin") || ""}/cliente`,
+          pending: `${req.headers.get("origin") || ""}/cliente`,
         },
         auto_return: "approved",
+        notification_url: notificationUrl,
+        external_reference: `${source || "pdv"}|${userData.user.id}`,
       }),
     });
 

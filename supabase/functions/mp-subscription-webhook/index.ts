@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     console.log("MP webhook", JSON.stringify(body));
 
-    // MP sends: { type: "subscription_preapproval" | "preapproval", data: { id } }
     const type = body.type || body.topic;
     const id = body.data?.id || body.id;
     if (!id) return new Response("no id", { status: 200 });
@@ -38,9 +37,9 @@ Deno.serve(async (req) => {
 
       const status = data.status; // pending|authorized|paused|cancelled
       const subStatus =
-        status === "authorized" ? "ativo" :
+        status === "authorized" ? "pago" :
         status === "cancelled" ? "cancelado" :
-        status === "paused" ? "cancelando" : "pendente";
+        status === "paused" ? "cancelado" : "pendente";
 
       await admin
         .from("mp_subscriptions")
@@ -52,6 +51,29 @@ Deno.serve(async (req) => {
           .from("subscriptions")
           .update({ status: subStatus })
           .eq("id", mpSub.subscription_id);
+      }
+
+      // When authorized for the first time, register payment in Financeiro
+      if (status === "authorized") {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: existingTx } = await admin
+          .from("transactions")
+          .select("id")
+          .eq("owner_id", mpSub.admin_user_id)
+          .eq("notes", `MP Preapproval: ${id}`)
+          .eq("transaction_date", today)
+          .maybeSingle();
+        if (!existingTx) {
+          await admin.from("transactions").insert({
+            description: `Assinatura recorrente${data.reason ? ` — ${data.reason}` : ""}`,
+            type: "entrada",
+            value: Number(mpSub.amount || data.auto_recurring?.transaction_amount || 0),
+            category: "Assinatura",
+            transaction_date: today,
+            owner_id: mpSub.admin_user_id,
+            notes: `MP Preapproval: ${id}`,
+          });
+        }
       }
     }
 
