@@ -109,7 +109,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Cortes Hoje" value={String(stats.cortesHoje)} icon={Scissors} index={0} />
+        <StatCard title="Serviços Hoje" value={String(stats.cortesHoje)} icon={Scissors} index={0} />
         <StatCard title="Receita do Dia" value={fmt(stats.receitaDia)} icon={DollarSign} index={1} />
         <StatCard title="Clientes Ativos" value={String(stats.clientesAtivos)} icon={Users} index={2} />
         <StatCard title="Ticket Médio" value={fmt(stats.ticketMedio)} icon={TrendingUp} index={3} />

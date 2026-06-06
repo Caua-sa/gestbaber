@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, full_name, phone } = body;
+      const { email, password, full_name, phone, birthday } = body;
       const role = normalizeRole(body.role);
 
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       }
 
       await adminClient.from("profiles").upsert(
-        { user_id: newUser.user.id, full_name: full_name || "", phone: phone || null },
+        { user_id: newUser.user.id, full_name: full_name || "", phone: phone || null, email: email || null, birthday: birthday || null },
         { onConflict: "user_id" },
       );
 

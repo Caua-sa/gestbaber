@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Boxes, AlertTriangle, Plus, Pencil, Trash2 } from "lucide-react";
+import { Boxes, AlertTriangle, Plus, Pencil, Trash2, Search, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/StatCard";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ export default function AdminInsumos() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Insumo | null>(null);
+  const [search, setSearch] = useState("");
 
   const empty = { name: "", unit: "un", stock: "0", min_stock: "0", cost_price: "0", supplier: "", notes: "" };
   const [form, setForm] = useState(empty);
@@ -75,6 +76,14 @@ export default function AdminInsumos() {
     fetchAll();
   };
 
+  const adjustStock = async (i: Insumo, delta: number) => {
+    const newStock = Math.max(0, Number(i.stock) + delta);
+    const { error } = await supabase.from("insumos").update({ stock: newStock }).eq("id", i.id);
+    if (error) { toast.error(error.message); return; }
+    setItems((prev) => prev.map((x) => x.id === i.id ? { ...x, stock: newStock } : x));
+    toast.success(`${i.name}: ${newStock} ${i.unit}`);
+  };
+
   const remove = async (id: string) => {
     if (!confirm("Excluir este insumo?")) return;
     const { error } = await supabase.from("insumos").delete().eq("id", id);
@@ -82,6 +91,15 @@ export default function AdminInsumos() {
     toast.success("Removido");
     fetchAll();
   };
+
+  const filtered = useMemo(() => {
+    const t = search.trim().toLowerCase();
+    if (!t) return items;
+    return items.filter(i =>
+      i.name.toLowerCase().includes(t) ||
+      (i.supplier || "").toLowerCase().includes(t),
+    );
+  }, [items, search]);
 
   const lowStock = items.filter(i => Number(i.stock) <= Number(i.min_stock)).length;
   const totalCost = items.reduce((s, i) => s + Number(i.stock) * Number(i.cost_price), 0);
@@ -105,24 +123,34 @@ export default function AdminInsumos() {
         <StatCard title="Valor Investido" value={fmt(totalCost)} icon={Boxes} index={2} />
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Pesquisar por nome ou fornecedor"
+          className="bg-secondary border-border pl-9"
+        />
+      </div>
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="text-left p-3">Insumo</th>
-              <th className="text-left p-3">Fornecedor</th>
+              <th className="text-left p-3 hidden md:table-cell">Fornecedor</th>
+              <th className="text-center p-3">Baixa rápida</th>
               <th className="text-right p-3">Estoque</th>
-              <th className="text-right p-3">Mín</th>
-              <th className="text-right p-3">Custo</th>
-              <th className="text-right p-3">Total</th>
+              <th className="text-right p-3 hidden md:table-cell">Mín</th>
+              <th className="text-right p-3 hidden md:table-cell">Custo</th>
               <th className="p-3"></th>
             </tr>
           </thead>
           <tbody>
-            {items.map((i, idx) => {
+            {filtered.map((i, idx) => {
               const low = Number(i.stock) <= Number(i.min_stock);
               return (
-                <motion.tr key={i.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.03 }}
+                <motion.tr key={i.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.02 }}
                   className={`border-t border-border ${low ? "bg-destructive/5" : ""}`}>
                   <td className="p-3">
                     <p className="font-medium flex items-center gap-2">
@@ -131,20 +159,34 @@ export default function AdminInsumos() {
                     </p>
                     <p className="text-xs text-muted-foreground">{i.unit}</p>
                   </td>
-                  <td className="p-3 text-muted-foreground">{i.supplier || "—"}</td>
-                  <td className="p-3 text-right">{Number(i.stock)} {i.unit}</td>
-                  <td className="p-3 text-right text-muted-foreground">{Number(i.min_stock)}</td>
-                  <td className="p-3 text-right">{fmt(Number(i.cost_price))}</td>
-                  <td className="p-3 text-right font-medium">{fmt(Number(i.stock) * Number(i.cost_price))}</td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-muted-foreground hidden md:table-cell">{i.supplier || "—"}</td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustStock(i, -1)} disabled={Number(i.stock) <= 0}>
+                        <Minus className="h-3 w-3" />1
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => adjustStock(i, -5)} disabled={Number(i.stock) <= 0}>
+                        <Minus className="h-3 w-3" />5
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-success" onClick={() => adjustStock(i, +1)}>
+                        <Plus className="h-3 w-3" />1
+                      </Button>
+                    </div>
+                  </td>
+                  <td className="p-3 text-right font-medium">{Number(i.stock)} {i.unit}</td>
+                  <td className="p-3 text-right text-muted-foreground hidden md:table-cell">{Number(i.min_stock)}</td>
+                  <td className="p-3 text-right hidden md:table-cell">{fmt(Number(i.cost_price))}</td>
+                  <td className="p-3 text-right whitespace-nowrap">
                     <button onClick={() => openEdit(i)} className="p-1 text-muted-foreground hover:text-primary"><Pencil className="h-4 w-4" /></button>
                     <button onClick={() => remove(i.id)} className="p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </td>
                 </motion.tr>
               );
             })}
-            {items.length === 0 && !loading && (
-              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nenhum insumo cadastrado.</td></tr>
+            {filtered.length === 0 && !loading && (
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">
+                {items.length === 0 ? "Nenhum insumo cadastrado." : "Nada encontrado para a busca."}
+              </td></tr>
             )}
           </tbody>
         </table>

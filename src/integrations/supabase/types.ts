@@ -99,6 +99,7 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          birthday_discount_percent: number
           created_at: string
           description: string | null
           facebook: string | null
@@ -117,6 +118,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string | null
+          birthday_discount_percent?: number
           created_at?: string
           description?: string | null
           facebook?: string | null
@@ -135,6 +137,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string | null
+          birthday_discount_percent?: number
           created_at?: string
           description?: string | null
           facebook?: string | null
@@ -543,7 +546,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthday: string | null
           created_at: string
+          email: string | null
           full_name: string
           id: string
           phone: string | null
@@ -551,7 +556,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          birthday?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -559,7 +566,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          birthday?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
@@ -711,12 +720,46 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_settings: {
+        Row: {
+          access_token: string | null
+          business_account_id: string | null
+          created_at: string
+          display_number: string | null
+          id: string
+          owner_id: string
+          phone_number_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          display_number?: string | null
+          id?: string
+          owner_id: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          display_number?: string | null
+          id?: string
+          owner_id?: string
+          phone_number_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       get_account_owner: { Args: { _user_id: string }; Returns: string }
+      has_birthday_today: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

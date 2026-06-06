@@ -1,28 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scissors, Mail, Lock, User } from "lucide-react";
+import { Scissors, Mail, Lock, User, Phone, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
+function normalizePhone(raw: string) {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  // assume Brazilian if no leading country code
+  if (digits.startsWith("55")) return `+${digits}`;
+  return `+55${digits}`;
+}
+
 export default function ClienteLogin() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { user } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // WhatsApp OTP
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  // Onboarding (after WhatsApp login if profile incomplete)
+  const [onboarding, setOnboarding] = useState(false);
+  const [obName, setObName] = useState("");
+  const [obEmail, setObEmail] = useState("");
+  const [obBirthday, setObBirthday] = useState("");
+
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const redirect = params.get("redirect") || "/cliente";
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // After login via WhatsApp, check if profile needs filling
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, email, birthday")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!profile || !profile.full_name || !profile.email) {
+        setOnboarding(true);
+        setObName(profile?.full_name || "");
+        setObEmail(profile?.email || user.email || "");
+        setObBirthday(profile?.birthday || "");
+      } else {
+        navigate(redirect);
+      }
+    })();
+  }, [user, navigate, redirect]);
+
+  const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      if (isSignUp) {
+      if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -32,26 +74,86 @@ export default function ClienteLogin() {
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+        toast.success("Conta criada! Verifique seu e-mail.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate(redirect);
       }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao processar");
+    } catch (err: any) {
+      toast.error(err.message || "Erro");
     } finally {
       setLoading(false);
     }
   };
 
+  const sendOtp = async () => {
+    const ph = normalizePhone(phone);
+    if (!ph) { toast.error("Informe o WhatsApp"); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({ phone: ph });
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setOtpSent(true);
+    toast.success("Código enviado por SMS/WhatsApp");
+  };
+
+  const verifyOtp = async () => {
+    const ph = normalizePhone(phone);
+    if (!otp) { toast.error("Informe o código"); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.verifyOtp({ phone: ph, token: otp, type: "sms" });
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Bem-vindo!");
+    // useEffect will pick up the user and decide onboarding/redirect
+  };
+
+  const completeOnboarding = async () => {
+    if (!user) return;
+    if (!obName.trim() || !obEmail.trim()) { toast.error("Nome e e-mail são obrigatórios"); return; }
+    setLoading(true);
+    const { error } = await supabase.from("profiles").upsert({
+      user_id: user.id,
+      full_name: obName.trim(),
+      email: obEmail.trim(),
+      phone: user.phone || phone || null,
+      birthday: obBirthday || null,
+    }, { onConflict: "user_id" });
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cadastro completo!");
+    navigate(redirect);
+  };
+
+  // Onboarding screen
+  if (onboarding && user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />
+            <h1 className="text-4xl font-display gold-text">BEM-VINDO</h1>
+            <p className="text-muted-foreground text-sm mt-1">Complete seu cadastro</p>
+          </div>
+          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+            <Input placeholder="Nome completo" value={obName} onChange={(e) => setObName(e.target.value)} />
+            <Input type="email" placeholder="E-mail" value={obEmail} onChange={(e) => setObEmail(e.target.value)} />
+            <div>
+              <label className="text-xs text-muted-foreground">Data de nascimento (ganhe 10% no seu aniversário 🎂)</label>
+              <Input type="date" value={obBirthday} onChange={(e) => setObBirthday(e.target.value)} />
+            </div>
+            <Button onClick={completeOnboarding} disabled={loading} className="w-full gold-gradient text-primary-foreground">
+              {loading ? "Salvando..." : "Continuar"}
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
           <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />
           <h1 className="text-4xl font-display gold-text">BARBER PRO</h1>
@@ -59,62 +161,89 @@ export default function ClienteLogin() {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-display text-2xl mb-6 text-center tracking-wide">
-            {isSignUp ? "Criar Conta" : "Entrar"}
-          </h2>
+          <Tabs defaultValue="whatsapp" className="w-full">
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+              <TabsTrigger value="email">E-mail</TabsTrigger>
+            </TabsList>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Nome completo"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={isSignUp}
-                  className="pl-10 bg-secondary border-border"
-                />
-              </div>
-            )}
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="email"
-                placeholder="E-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="pl-10 bg-secondary border-border"
-              />
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="pl-10 bg-secondary border-border"
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Aguarde..." : isSignUp ? "Criar Conta" : "Entrar"}
-            </Button>
-          </form>
+            <TabsContent value="whatsapp" className="space-y-4">
+              {!otpSent ? (
+                <>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="WhatsApp (com DDD)"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="pl-10 bg-secondary border-border"
+                    />
+                  </div>
+                  <Button onClick={sendOtp} disabled={loading} className="w-full">
+                    {loading ? "Enviando..." : "Receber código"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Enviaremos um código de 6 dígitos para validar seu número.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">Código enviado para {normalizePhone(phone)}</p>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Código de 6 dígitos"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="pl-10 bg-secondary border-border"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <Button onClick={verifyOtp} disabled={loading} className="w-full">
+                    {loading ? "Validando..." : "Entrar"}
+                  </Button>
+                  <button onClick={() => { setOtpSent(false); setOtp(""); }} className="text-xs text-muted-foreground hover:text-primary mx-auto block">
+                    Reenviar / alterar número
+                  </button>
+                </>
+              )}
+            </TabsContent>
 
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            {isSignUp ? "Já tem conta?" : "Não tem conta?"}{" "}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:underline"
-            >
-              {isSignUp ? "Entrar" : "Criar conta"}
-            </button>
-          </p>
+            <TabsContent value="email">
+              <form onSubmit={handleEmail} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="pl-10 bg-secondary border-border"
+                    />
+                  </div>
+                )}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 bg-secondary border-border" />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 bg-secondary border-border" />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Aguarde..." : mode === "signup" ? "Criar Conta" : "Entrar"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  {mode === "signup" ? "Já tem conta?" : "Não tem conta?"}{" "}
+                  <button type="button" onClick={() => setMode(mode === "signup" ? "login" : "signup")} className="text-primary hover:underline">
+                    {mode === "signup" ? "Entrar" : "Criar conta"}
+                  </button>
+                </p>
+              </form>
+            </TabsContent>
+          </Tabs>
         </div>
-
       </motion.div>
     </div>
   );

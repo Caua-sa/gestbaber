@@ -1,37 +1,57 @@
-## Plano de implementação
+## Resumo
+Implementar 8 melhorias agrupadas em backend (migrações + edge functions) e frontend (admin + portal cliente).
 
-### 1. Planos — mostrar apenas os do domínio
-- `ClientePlanos.tsx`: usar `useClientBarbershop` para travar a barbearia atual (a do domínio/contexto), removendo o seletor de múltiplas barbearias. Só carrega `plans` daquela `barbershop_id`.
+## Backend / Banco
 
-### 2. Barbeiros (nova área no admin)
-- Nova tabela `barbers`: `id, owner_id, barbershop_id, name, commission_pct (0-100), active, created_at, updated_at`.
-- RLS: admin gerencia os próprios (`owner_id = auth.uid()`); leitura pública dos ativos para aparecer no agendamento.
-- Nova página `src/pages/admin/AdminBarbeiros.tsx` com CRUD (nome + % de comissão + ativo).
-- Item no `AppSidebar` ("Barbeiros") e rota em `App.tsx`.
-- Substituir o `barber` (texto livre) no agendamento por seleção dos barbeiros cadastrados da barbearia.
+1. **profiles**: adicionar coluna `birthday DATE` (nullable) e `email TEXT` (sincronizado).
+2. **subscriptions**: garantir status `pago` ao confirmar pagamento. Atualizar enum/check para aceitar `pago`. Webhook `mp-subscription-webhook` atualiza status para `pago` quando MP retornar `authorized/approved` e cria transação no Financeiro automaticamente.
+3. **mp-create-payment webhook**: ao receber pagamento `approved` da loja, marcar `orders.status='pago'` e inserir linha em `transactions` (categoria "Loja", tipo "entrada").
+4. **whatsapp_settings** (nova tabela): `owner_id`, `phone_number_id`, `access_token` (criptografado via secret reference), `business_account_id`, `display_number`. RLS apenas para o owner. Grants padrão.
+5. **birthday_discount_percent** em `barbershops` (default 10).
+6. Função SQL `has_birthday_today(uuid)` reutilizável.
 
-### 3. Serviços/Cortes (nova área no admin)
-- Nova tabela `services`: `id, owner_id, barbershop_id, name, price, duration_min, active`.
-- RLS análoga (admin do dono gerencia; público lê ativos).
-- Nova página `src/pages/admin/AdminServicos.tsx` (CRUD nome/preço/duração).
-- Item no sidebar ("Cortes & Preços") + rota.
-- `ClienteAgendamento.tsx` e `Agendamento.tsx`: trocar lista hardcoded de serviços por consulta a `services` da barbearia, mantendo preço para uso no financeiro.
+## Edge Functions
 
-### 4. Confirmar atendimentos avulsos + concluídos no Dashboard
-- Adicionar coluna `price numeric` em `appointments` (default 0) para guardar valor do corte.
-- Ao concluir um agendamento (status `concluido`) no admin (`Agendamento.tsx`), abrir confirmação e lançar automaticamente uma `transactions` (tipo `entrada`, descrição "Corte - {serviço}", `value = price`, `owner_id`), evitando duplicar se já existir lançamento para o appointment (campo `notes` com tag `appt:{id}`).
-- Botão "Atendimento avulso" no admin Agendamento para registrar um corte fora de plano: cria appointment já como `concluido` + transação.
-- `Dashboard.tsx`: passar a calcular dados reais:
-  - Cortes Hoje: count de appointments `concluido` hoje do owner.
-  - Receita do Dia: sum de `transactions` (entrada) de hoje.
-  - Clientes Ativos: count distinct user_id em subscriptions ativas da barbearia.
-  - Ticket Médio: receita/cortes.
-  - Gráfico semanal: cortes concluídos por dia da semana atual.
-  - Últimos cortes: últimos appointments `concluido`.
+- **mp-subscription-webhook**: setar `status='pago'`, registrar transação.
+- **mp-create-payment / novo mp-payment-webhook**: idem para a loja.
+- **whatsapp-send** (nova): usa Meta Cloud API com token salvo em `whatsapp_settings` para mandar lembretes de vencimento (substitui wa.me).
 
-### Detalhes técnicos
-- Migração única cobrindo: criar `barbers`, `services`, adicionar `price` em `appointments`, RLS de todas.
-- Edge functions não precisam alteração.
-- Atualizar `useClientBarbershop` se necessário (já resolve por slug/contexto).
+## Autenticação Cliente (WhatsApp OTP)
 
-Confirma que sigo nessa direção?
+- Habilitar **Supabase Phone Auth** com Twilio (connector).
+- Nova tela `/cliente/login` com duas etapas:
+  1. Digite WhatsApp → enviar OTP (`supabase.auth.signInWithOtp({ phone })`)
+  2. Confirma código → se primeiro login, formulário pede nome, e-mail, data de nascimento e salva no `profiles`.
+- Mantém login por e-mail/senha como alternativa.
+
+## Frontend Admin
+
+- **AdminClientes**:
+  - Form ganha campo "Data de nascimento" (date picker).
+  - Filtro: "Todos / Vencimento ≤ 7 dias / Aniversariantes do dia".
+  - Indicador 🎂 quando hoje é aniversário.
+- **AdminInsumos**:
+  - Barra de busca por nome/fornecedor.
+  - Em cada linha, botões `-1`, `-5` e input rápido para baixa de estoque (com `updated_at`).
+- **AdminWhatsApp** (nova rota oculta `/admin/whatsapp`, item na sidebar "WhatsApp"):
+  - Campos: Phone Number ID, Access Token, Business Account ID, Número de exibição.
+  - Botão "Testar envio" chama `whatsapp-send` com mensagem teste.
+- **Dashboard**: trocar label "Cortes Hoje" → "Serviços Hoje".
+- **Financeiro**: nada estrutural — já lê `transactions`; passa a mostrar pagamentos automáticos das assinaturas/loja.
+
+## Frontend Cliente
+
+- **ClienteLoja / ClientePlanos**: ao calcular total, se `profile.birthday` == hoje, aplica 10% e mostra badge "🎂 Feliz aniversário — 10% off aplicado".
+- **Portal**: mostra próximo vencimento e flag de aniversário.
+
+## Configuração Requerida
+
+- Conectar **Twilio** (connector) para Phone Auth.
+- Usuário precisa criar app Meta WhatsApp Business e colar credenciais na nova tela.
+
+## Ordem de execução
+
+1. Migração SQL (tabelas/colunas/check).
+2. Edge functions atualizadas + nova whatsapp-send.
+3. Conectar Twilio e habilitar phone auth.
+4. Telas: AdminClientes, AdminInsumos, AdminWhatsApp, Dashboard label, Cliente Login OTP, Loja/Planos com desconto.
