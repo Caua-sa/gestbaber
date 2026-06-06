@@ -193,6 +193,12 @@ export function ClienteLoja() {
                 <span className="font-medium">{fmt(c.qty * Number(c.product.sell_price))}</span>
               </div>
             ))}
+            {birthdayToday && (
+              <div className="flex justify-between text-sm text-primary border-t border-border/50 pt-2">
+                <span className="flex items-center gap-1.5"><Cake className="h-3.5 w-3.5" /> Desconto aniversário ({DISCOUNT_PERCENT}%)</span>
+                <span className="font-medium">−{fmt(discount)}</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="font-display text-lg">Total: <span className="text-primary">{fmt(cartTotal)}</span></span>
