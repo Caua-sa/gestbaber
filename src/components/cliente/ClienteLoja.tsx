@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, Minus, Plus, MapPin, CreditCard, Store, Loader2 } from "lucide-react";
+import { ShoppingCart, Minus, Plus, MapPin, CreditCard, Store, Loader2, Cake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,8 @@ interface CartItem {
   qty: number;
 }
 
+const DISCOUNT_PERCENT = 10;
+
 export function ClienteLoja() {
   const { user } = useAuth();
   const { shop } = useClientBarbershop();
@@ -30,6 +32,7 @@ export function ClienteLoja() {
   const [loading, setLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [processing, setProcessing] = useState<"mp" | "shop" | null>(null);
+  const [birthdayToday, setBirthdayToday] = useState(false);
 
   useEffect(() => {
     supabase
@@ -45,6 +48,19 @@ export function ClienteLoja() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("birthday").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (!data?.birthday) return;
+        const d = new Date(data.birthday);
+        const now = new Date();
+        if (d.getUTCMonth() === now.getMonth() && d.getUTCDate() === now.getDate()) {
+          setBirthdayToday(true);
+        }
+      });
+  }, [user]);
+
   const addToCart = (p: Product) => {
     setCart((prev) => {
       const ex = prev.find((c) => c.product.id === p.id);
@@ -58,7 +74,9 @@ export function ClienteLoja() {
   const removeFromCart = (id: string) =>
     setCart((prev) => prev.map((c) => (c.product.id === id ? { ...c, qty: c.qty - 1 } : c)).filter((c) => c.qty > 0));
 
-  const cartTotal = cart.reduce((s, c) => s + c.qty * Number(c.product.sell_price), 0);
+  const subtotal = cart.reduce((s, c) => s + c.qty * Number(c.product.sell_price), 0);
+  const discount = birthdayToday ? subtotal * (DISCOUNT_PERCENT / 100) : 0;
+  const cartTotal = subtotal - discount;
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const insertOrders = async (status: "aguardando_pagamento" | "pendente") => {
