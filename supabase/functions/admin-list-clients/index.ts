@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     const ids = [...userIds];
 
     const [{ data: profiles }, { data: planRows }] = await Promise.all([
-      admin.from("profiles").select("user_id, full_name, phone").in("user_id", ids),
+      admin.from("profiles").select("user_id, full_name, phone, birthday").in("user_id", ids),
       admin.from("plans").select("id, name, price").in("id", filteredSubs.map((s) => s.plan_id).filter(Boolean) as string[]),
     ]);
     const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       const userSubs = filteredSubs
         .filter((s) => s.user_id === uid)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      const activeSub = userSubs.find((s) => s.status === "ativo") || userSubs[0];
+      const activeSub = userSubs.find((s) => s.status === "ativo" || s.status === "pago") || userSubs[0];
       const userAppts = (appts || [])
         .filter((a) => a.user_id === uid)
         .sort((a, b) => `${b.appointment_date} ${b.appointment_time}`.localeCompare(`${a.appointment_date} ${a.appointment_time}`));
@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
         full_name: profile?.full_name || "Cliente",
         phone: profile?.phone || null,
         email: emailMap.get(uid) || null,
+        birthday: profile?.birthday || null,
         subscription: activeSub
           ? {
               status: activeSub.status,
