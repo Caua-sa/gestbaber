@@ -21,11 +21,13 @@ export type Database = {
           barber: string
           barber_id: string | null
           barbershop_id: string | null
+          confirmation_sent_at: string | null
           created_at: string
           id: string
           notes: string | null
           owner_id: string | null
           price: number
+          reminder_sent_at: string | null
           service: string
           status: string
           user_id: string
@@ -36,11 +38,13 @@ export type Database = {
           barber: string
           barber_id?: string | null
           barbershop_id?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_id?: string | null
           price?: number
+          reminder_sent_at?: string | null
           service: string
           status?: string
           user_id: string
@@ -51,11 +55,13 @@ export type Database = {
           barber?: string
           barber_id?: string | null
           barbershop_id?: string | null
+          confirmation_sent_at?: string | null
           created_at?: string
           id?: string
           notes?: string | null
           owner_id?: string | null
           price?: number
+          reminder_sent_at?: string | null
           service?: string
           status?: string
           user_id?: string
@@ -547,31 +553,37 @@ export type Database = {
       profiles: {
         Row: {
           birthday: string | null
+          birthday_greeted_year: number | null
           created_at: string
           email: string | null
           full_name: string
           id: string
           phone: string | null
+          theme_preference: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           birthday?: string | null
+          birthday_greeted_year?: number | null
           created_at?: string
           email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
+          theme_preference?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           birthday?: string | null
+          birthday_greeted_year?: number | null
           created_at?: string
           email?: string | null
           full_name?: string
           id?: string
           phone?: string | null
+          theme_preference?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -622,6 +634,7 @@ export type Database = {
           expires_at: string | null
           id: string
           plan_id: string
+          renewal_notified_at: string | null
           started_at: string
           status: string
           user_id: string
@@ -634,6 +647,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           plan_id: string
+          renewal_notified_at?: string | null
           started_at?: string
           status?: string
           user_id: string
@@ -646,6 +660,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           plan_id?: string
+          renewal_notified_at?: string | null
           started_at?: string
           status?: string
           user_id?: string
@@ -723,32 +738,65 @@ export type Database = {
       whatsapp_settings: {
         Row: {
           access_token: string | null
+          birthday_enabled: boolean | null
+          bot_enabled: boolean | null
           business_account_id: string | null
+          confirmation_enabled: boolean | null
           created_at: string
           display_number: string | null
+          expiration_enabled: boolean | null
+          expiration_lead_days: number | null
           id: string
           owner_id: string
           phone_number_id: string | null
+          reminder_enabled: boolean | null
+          reminder_lead_hours: number | null
+          template_birthday: string | null
+          template_confirmation: string | null
+          template_expiration: string | null
+          template_reminder: string | null
           updated_at: string
         }
         Insert: {
           access_token?: string | null
+          birthday_enabled?: boolean | null
+          bot_enabled?: boolean | null
           business_account_id?: string | null
+          confirmation_enabled?: boolean | null
           created_at?: string
           display_number?: string | null
+          expiration_enabled?: boolean | null
+          expiration_lead_days?: number | null
           id?: string
           owner_id: string
           phone_number_id?: string | null
+          reminder_enabled?: boolean | null
+          reminder_lead_hours?: number | null
+          template_birthday?: string | null
+          template_confirmation?: string | null
+          template_expiration?: string | null
+          template_reminder?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string | null
+          birthday_enabled?: boolean | null
+          bot_enabled?: boolean | null
           business_account_id?: string | null
+          confirmation_enabled?: boolean | null
           created_at?: string
           display_number?: string | null
+          expiration_enabled?: boolean | null
+          expiration_lead_days?: number | null
           id?: string
           owner_id?: string
           phone_number_id?: string | null
+          reminder_enabled?: boolean | null
+          reminder_lead_hours?: number | null
+          template_birthday?: string | null
+          template_confirmation?: string | null
+          template_expiration?: string | null
+          template_reminder?: string | null
           updated_at?: string
         }
         Relationships: []
