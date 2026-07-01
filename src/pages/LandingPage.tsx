@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { applyShopBranding } from "@/lib/siteBranding";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface Shop {
   id: string; owner_id: string; slug: string; name: string;
@@ -48,6 +49,7 @@ export default function LandingPage() {
   const [qName, setQName] = useState("");
   const [qEmail, setQEmail] = useState("");
   const [qPassword, setQPassword] = useState("");
+  const [servicesExpanded, setServicesExpanded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -191,6 +193,7 @@ export default function LandingPage() {
             <a href="#contact" className="hover:text-primary transition-colors">Contato</a>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {user ? (
               <Link to="/cliente"><Button size="sm" variant="outline">Meu Portal</Button></Link>
             ) : (
@@ -249,25 +252,61 @@ export default function LandingPage() {
       <section id="services" className="py-20 px-4 bg-card/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-display gold-text text-center mb-4">Cortes & Serviços</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-lg mx-auto">Valores atualizados pela barbearia.</p>
+          <p className="text-muted-foreground text-center mb-12 max-w-lg mx-auto">Toque em um serviço para agendar. Valores atualizados pela barbearia.</p>
           {services.length === 0 ? (
             <p className="text-center text-muted-foreground">Nenhum serviço cadastrado.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {services.map((s) => (
-                <div key={s.id} className="bg-card border border-border rounded-xl p-6 hover:border-primary/40 hover:card-glow transition-all duration-300 group">
-                  <div className="h-12 w-12 rounded-lg gold-gradient flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Scissors className="h-6 w-6 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-display text-xl tracking-wide mb-1">{s.name}</h3>
-                  <p className="text-primary font-bold text-lg mb-2">{fmt(Number(s.price))}</p>
-                  <p className="text-muted-foreground text-sm">{s.duration_min} min</p>
+            <>
+              <motion.div
+                layout
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              >
+                {(servicesExpanded ? services : services.slice(0, 4)).map((s, i) => (
+                  <motion.button
+                    layout
+                    key={s.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.35, delay: (i % 4) * 0.05 }}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    onClick={() => {
+                      if (user) navigate(`/cliente?tab=agendar&service=${s.id}`);
+                      else navigate(`/cliente/login?redirect=${encodeURIComponent(`/cliente?tab=agendar&service=${s.id}`)}`);
+                    }}
+                    className="text-left bg-card border border-border rounded-xl p-6 hover:border-primary/60 hover:card-glow transition-all duration-300 group cursor-pointer"
+                  >
+                    <div className="h-12 w-12 rounded-lg gold-gradient flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <Scissors className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <h3 className="font-display text-xl tracking-wide mb-1">{s.name}</h3>
+                    <p className="text-primary font-bold text-lg mb-2">{fmt(Number(s.price))}</p>
+                    <p className="text-muted-foreground text-sm">{s.duration_min} min</p>
+                    <p className="mt-3 text-xs text-primary/80 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                      Agendar agora <ChevronRight className="h-3 w-3" />
+                    </p>
+                  </motion.button>
+                ))}
+              </motion.div>
+              {services.length > 4 && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setServicesExpanded((v) => !v)}
+                    className="rounded-full border-primary/40 hover:bg-primary/10"
+                  >
+                    <motion.span animate={{ rotate: servicesExpanded ? 180 : 0 }} transition={{ duration: 0.3 }} className="mr-2 inline-flex">
+                      <ChevronRight className="h-4 w-4 rotate-90" />
+                    </motion.span>
+                    {servicesExpanded ? "Ver menos" : `Ver todos (${services.length})`}
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>
+
 
       {/* Plans */}
       <section id="plans" className="py-20 px-4">
