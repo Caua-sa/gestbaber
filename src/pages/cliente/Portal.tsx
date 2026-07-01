@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Crown, Calendar, LogOut, ShoppingBag, Sparkles, Scissors, Clock, MapPin, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,11 @@ interface ActiveSub {
 export default function ClientePortal() {
   const { user, signOut } = useAuth();
   const [tab, setTab] = useState<Tab>("inicio");
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const t = searchParams.get("tab") as Tab | null;
+    if (t && ["inicio","loja","planos","agendar","meus-agendamentos"].includes(t)) setTab(t);
+  }, [searchParams]);
   const [activeSub, setActiveSub] = useState<ActiveSub | null>(null);
   const [nextAppt, setNextAppt] = useState<any>(null);
   const [profile, setProfile] = useState<{ full_name: string } | null>(null);
