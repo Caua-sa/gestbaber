@@ -170,6 +170,61 @@ export default function Financeiro() {
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl tracking-wide flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" /> Assinaturas dos Clientes
+          </h2>
+          <button onClick={fetchSubs} className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+            <RefreshCw className={`h-3 w-3 ${loadingSubs ? "animate-spin" : ""}`} /> Atualizar
+          </button>
+        </div>
+        {loadingSubs ? (
+          <p className="text-muted-foreground text-center py-6 text-sm">Carregando assinaturas...</p>
+        ) : subs.length === 0 ? (
+          <p className="text-muted-foreground text-center py-6 text-sm">Nenhuma assinatura ainda.</p>
+        ) : (
+          <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            {subs.map((s, i) => {
+              const paid = s.status === "pago" || s.mp_status === "authorized";
+              const canceled = s.status === "cancelado" || s.mp_status === "cancelled";
+              const nextDate = s.next_payment_date || s.expires_at;
+              return (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className="flex items-center justify-between py-2.5 px-3 border-b border-border/50 last:border-0 hover:bg-secondary/30 rounded"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{s.client_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {s.plan_name}
+                      {s.started_at && <> • início {new Date(s.started_at).toLocaleDateString("pt-BR")}</>}
+                      {nextDate && <> • próx. {new Date(nextDate).toLocaleDateString("pt-BR")}</>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-medium">{fmt(s.plan_price)}</span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        canceled ? "border-destructive/40 text-destructive"
+                        : paid ? "border-success/40 text-success"
+                        : "border-primary/40 text-primary"
+                      }
+                    >
+                      {canceled ? "cancelado" : paid ? "pago" : "pendente"}
+                    </Badge>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
         <h2 className="font-display text-xl mb-4 tracking-wide">Transações</h2>
         {loading ? (
           <p className="text-muted-foreground text-center py-8">Carregando...</p>
