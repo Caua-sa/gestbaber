@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,18 @@ interface Transaction {
   category: string;
   transaction_date: string;
   notes: string | null;
+}
+
+interface SubRow {
+  id: string;
+  status: string;
+  started_at: string | null;
+  expires_at: string | null;
+  client_name: string;
+  plan_name: string;
+  plan_price: number;
+  mp_status: string | null;
+  next_payment_date: string | null;
 }
 
 const categories = ["Serviço", "Produto", "Fornecedor", "Aluguel", "Salário", "Assinaturas", "Outros"];
