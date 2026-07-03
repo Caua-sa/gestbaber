@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { applyShopBranding } from "@/lib/siteBranding";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ClienteChat } from "@/components/cliente/ClienteChat";
 
 interface Shop {
   id: string; owner_id: string; slug: string; name: string;
@@ -449,6 +450,7 @@ export default function LandingPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <ClienteChat />
     </div>
   );
 }

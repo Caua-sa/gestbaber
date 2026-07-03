@@ -187,7 +187,7 @@ export default function AdminClientes() {
               <Input type="email" placeholder="E-mail" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
               <Input placeholder="WhatsApp (com DDD, só números)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               <div>
-                <label className="text-xs text-muted-foreground">Data de nascimento</label>
+                <label className="text-xs text-muted-foreground">🎂 Data de aniversário (o cliente ganha desconto automático na loja no dia)</label>
                 <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
               </div>
               <Input type="password" placeholder="Senha de acesso" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />

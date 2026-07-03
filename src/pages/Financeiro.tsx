@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,12 +22,26 @@ interface Transaction {
   notes: string | null;
 }
 
+interface SubRow {
+  id: string;
+  status: string;
+  started_at: string | null;
+  expires_at: string | null;
+  client_name: string;
+  plan_name: string;
+  plan_price: number;
+  mp_status: string | null;
+  next_payment_date: string | null;
+}
+
 const categories = ["Serviço", "Produto", "Fornecedor", "Aluguel", "Salário", "Assinaturas", "Outros"];
 
 export default function Financeiro() {
   const { user } = useAuth();
   const { ownerId } = useAccountOwner();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [subs, setSubs] = useState<SubRow[]>([]);
+  const [loadingSubs, setLoadingSubs] = useState(true);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -45,7 +60,55 @@ export default function Financeiro() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchTransactions(); }, [ownerId]);
+  const fetchSubs = async () => {
+    if (!ownerId) return;
+    setLoadingSubs(true);
+    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle();
+    const bId = shop?.id;
+    const q = supabase
+      .from("subscriptions")
+      .select("id, status, started_at, expires_at, user_id, plan:plans(name, price)")
+      .order("started_at", { ascending: false })
+      .limit(100);
+    const { data } = bId ? await q.eq("barbershop_id", bId) : await q;
+    if (!data) { setSubs([]); setLoadingSubs(false); return; }
+    const userIds = Array.from(new Set(data.map((s: any) => s.user_id).filter(Boolean)));
+    const subIds = data.map((s: any) => s.id);
+    const [{ data: profs }, { data: mps }] = await Promise.all([
+      userIds.length ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds) : Promise.resolve({ data: [] as any[] }),
+      subIds.length ? supabase.from("mp_subscriptions").select("subscription_id, status, next_payment_date").in("subscription_id", subIds) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const profMap = new Map((profs || []).map((p: any) => [p.user_id, p.full_name]));
+    const mpMap = new Map((mps || []).map((m: any) => [m.subscription_id, m]));
+    setSubs(data.map((s: any) => {
+      const mp = mpMap.get(s.id);
+      return {
+        id: s.id,
+        status: s.status,
+        started_at: s.started_at,
+        expires_at: s.expires_at,
+        client_name: profMap.get(s.user_id) || "Cliente",
+        plan_name: s.plan?.name || "-",
+        plan_price: Number(s.plan?.price || 0),
+        mp_status: mp?.status || null,
+        next_payment_date: mp?.next_payment_date || null,
+      };
+    }));
+    setLoadingSubs(false);
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSubs();
+    if (!ownerId) return;
+    const ch = supabase
+      .channel(`fin-subs-${ownerId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscriptions" }, () => { fetchSubs(); fetchTransactions(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mp_subscriptions" }, () => { fetchSubs(); fetchTransactions(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => fetchTransactions())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [ownerId]);
 
   const totalReceita = transactions.filter(t => t.type === "entrada").reduce((s, t) => s + Number(t.value), 0);
   const totalDespesas = transactions.filter(t => t.type === "saída").reduce((s, t) => s + Number(t.value), 0);
@@ -104,6 +167,61 @@ export default function Financeiro() {
         <StatCard title="Receita Total" value={fmt(totalReceita)} icon={TrendingUp} index={0} />
         <StatCard title="Despesas" value={fmt(totalDespesas)} icon={TrendingDown} index={1} />
         <StatCard title="Lucro Líquido" value={fmt(lucro)} icon={DollarSign} index={2} />
+      </div>
+
+      <div className="bg-card border border-border rounded-lg p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl tracking-wide flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" /> Assinaturas dos Clientes
+          </h2>
+          <button onClick={fetchSubs} className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+            <RefreshCw className={`h-3 w-3 ${loadingSubs ? "animate-spin" : ""}`} /> Atualizar
+          </button>
+        </div>
+        {loadingSubs ? (
+          <p className="text-muted-foreground text-center py-6 text-sm">Carregando assinaturas...</p>
+        ) : subs.length === 0 ? (
+          <p className="text-muted-foreground text-center py-6 text-sm">Nenhuma assinatura ainda.</p>
+        ) : (
+          <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            {subs.map((s, i) => {
+              const paid = s.status === "pago" || s.mp_status === "authorized";
+              const canceled = s.status === "cancelado" || s.mp_status === "cancelled";
+              const nextDate = s.next_payment_date || s.expires_at;
+              return (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.02 }}
+                  className="flex items-center justify-between py-2.5 px-3 border-b border-border/50 last:border-0 hover:bg-secondary/30 rounded"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{s.client_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {s.plan_name}
+                      {s.started_at && <> • início {new Date(s.started_at).toLocaleDateString("pt-BR")}</>}
+                      {nextDate && <> • próx. {new Date(nextDate).toLocaleDateString("pt-BR")}</>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-medium">{fmt(s.plan_price)}</span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        canceled ? "border-destructive/40 text-destructive"
+                        : paid ? "border-success/40 text-success"
+                        : "border-primary/40 text-primary"
+                      }
+                    >
+                      {canceled ? "cancelado" : paid ? "pago" : "pendente"}
+                    </Badge>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
