@@ -418,6 +418,8 @@ export default function ClientePortal() {
           )}
         </AlertDialogContent>
       </AlertDialog>
+
+      <ClienteChat />
     </div>
   );
 }
