@@ -40,6 +40,8 @@ export default function Financeiro() {
   const { user } = useAuth();
   const { ownerId } = useAccountOwner();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [subs, setSubs] = useState<SubRow[]>([]);
+  const [loadingSubs, setLoadingSubs] = useState(true);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -58,7 +60,55 @@ export default function Financeiro() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchTransactions(); }, [ownerId]);
+  const fetchSubs = async () => {
+    if (!ownerId) return;
+    setLoadingSubs(true);
+    const { data: shop } = await supabase.from("barbershops").select("id").eq("owner_id", ownerId).maybeSingle();
+    const bId = shop?.id;
+    const q = supabase
+      .from("subscriptions")
+      .select("id, status, started_at, expires_at, user_id, plan:plans(name, price)")
+      .order("started_at", { ascending: false })
+      .limit(100);
+    const { data } = bId ? await q.eq("barbershop_id", bId) : await q;
+    if (!data) { setSubs([]); setLoadingSubs(false); return; }
+    const userIds = Array.from(new Set(data.map((s: any) => s.user_id).filter(Boolean)));
+    const subIds = data.map((s: any) => s.id);
+    const [{ data: profs }, { data: mps }] = await Promise.all([
+      userIds.length ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds) : Promise.resolve({ data: [] as any[] }),
+      subIds.length ? supabase.from("mp_subscriptions").select("subscription_id, status, next_payment_date").in("subscription_id", subIds) : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const profMap = new Map((profs || []).map((p: any) => [p.user_id, p.full_name]));
+    const mpMap = new Map((mps || []).map((m: any) => [m.subscription_id, m]));
+    setSubs(data.map((s: any) => {
+      const mp = mpMap.get(s.id);
+      return {
+        id: s.id,
+        status: s.status,
+        started_at: s.started_at,
+        expires_at: s.expires_at,
+        client_name: profMap.get(s.user_id) || "Cliente",
+        plan_name: s.plan?.name || "-",
+        plan_price: Number(s.plan?.price || 0),
+        mp_status: mp?.status || null,
+        next_payment_date: mp?.next_payment_date || null,
+      };
+    }));
+    setLoadingSubs(false);
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSubs();
+    if (!ownerId) return;
+    const ch = supabase
+      .channel(`fin-subs-${ownerId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscriptions" }, () => { fetchSubs(); fetchTransactions(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "mp_subscriptions" }, () => { fetchSubs(); fetchTransactions(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => fetchTransactions())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [ownerId]);
 
   const totalReceita = transactions.filter(t => t.type === "entrada").reduce((s, t) => s + Number(t.value), 0);
   const totalDespesas = transactions.filter(t => t.type === "saída").reduce((s, t) => s + Number(t.value), 0);
