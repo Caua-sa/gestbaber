@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw, Ban } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +31,10 @@ interface SubRow {
   plan_name: string;
   plan_price: number;
   mp_status: string | null;
+  mp_id: string | null;
   next_payment_date: string | null;
 }
+
 
 const categories = ["Serviço", "Produto", "Fornecedor", "Aluguel", "Salário", "Assinaturas", "Outros"];
 
@@ -76,8 +78,9 @@ export default function Financeiro() {
     const subIds = data.map((s: any) => s.id);
     const [{ data: profs }, { data: mps }] = await Promise.all([
       userIds.length ? supabase.from("profiles").select("user_id, full_name").in("user_id", userIds) : Promise.resolve({ data: [] as any[] }),
-      subIds.length ? supabase.from("mp_subscriptions").select("subscription_id, status, next_payment_date").in("subscription_id", subIds) : Promise.resolve({ data: [] as any[] }),
+      subIds.length ? supabase.from("mp_subscriptions").select("id, subscription_id, status, next_payment_date").in("subscription_id", subIds) : Promise.resolve({ data: [] as any[] }),
     ]);
+
     const profMap = new Map((profs || []).map((p: any) => [p.user_id, p.full_name]));
     const mpMap = new Map((mps || []).map((m: any) => [m.subscription_id, m]));
     setSubs(data.map((s: any) => {
@@ -91,9 +94,11 @@ export default function Financeiro() {
         plan_name: s.plan?.name || "-",
         plan_price: Number(s.plan?.price || 0),
         mp_status: mp?.status || null,
+        mp_id: mp?.id || null,
         next_payment_date: mp?.next_payment_date || null,
       };
     }));
+
     setLoadingSubs(false);
   };
 
@@ -150,6 +155,20 @@ export default function Financeiro() {
     toast.success("Transação excluída!");
     fetchTransactions();
   };
+  const handleCancelSub = async (mpId: string, clientName: string) => {
+    if (!confirm(`Cancelar a assinatura de ${clientName}? O acesso segue válido até o fim do período.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("mp-cancel-subscription", {
+        body: { mp_subscription_id: mpId, mode: "end_of_cycle" },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast.success("Assinatura cancelada");
+      fetchSubs();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao cancelar");
+    }
+  };
+
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
