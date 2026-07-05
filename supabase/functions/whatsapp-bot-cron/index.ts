@@ -14,22 +14,36 @@ function fill(tpl: string, vars: Record<string, string | number>) {
   );
 }
 
-async function sendWA(pnid: string, token: string, to: string, msg: string) {
+async function sendWA(s: any, to: string, msg: string) {
   const clean = String(to).replace(/\D/g, "");
   if (!clean) return { ok: false, error: "invalid phone" };
-  const r = await fetch(`https://graph.facebook.com/v20.0/${pnid}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: clean,
-      type: "text",
-      text: { body: String(msg).slice(0, 4000) },
-    }),
-  });
-  const data = await r.json().catch(() => ({}));
-  return { ok: r.ok, data };
+  try {
+    if (s.mode === "baileys" && s.baileys_url) {
+      const r = await fetch(s.baileys_url.replace(/\/$/, "") + "/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}) },
+        body: JSON.stringify({ to: clean, message: String(msg).slice(0, 4000) }),
+      });
+      const data = await r.json().catch(() => ({}));
+      return { ok: r.ok, data };
+    }
+    if (!s.phone_number_id || !s.access_token) return { ok: false, error: "cloud não configurada" };
+    const r = await fetch(`https://graph.facebook.com/v20.0/${s.phone_number_id}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${s.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: clean, type: "text",
+        text: { body: String(msg).slice(0, 4000) },
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    return { ok: r.ok, data };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
