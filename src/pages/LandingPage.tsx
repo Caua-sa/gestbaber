@@ -21,7 +21,7 @@ interface Shop {
 }
 interface Plan { id: string; name: string; price: number; period: string; features: string[]; popular: boolean; }
 interface Service { id: string; name: string; price: number; duration_min: number; }
-interface Barber { id: string; name: string; }
+interface Barber { id: string; name: string; photo_url?: string | null; }
 
 const SHOP_KEY = "barberpro:client-barbershop";
 
@@ -83,7 +83,7 @@ export default function LandingPage() {
       const [{ data: p }, { data: sv }, { data: br }] = await Promise.all([
         supabase.from("plans").select("*").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("price"),
         supabase.from("services").select("id,name,price,duration_min").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("price"),
-        supabase.from("barbers").select("id,name").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("name"),
+        supabase.from("barbers").select("id,name,photo_url").or(`barbershop_id.eq.${s.id},owner_id.eq.${s.owner_id}`).eq("active", true).order("name"),
       ]);
       setPlans((p || []).map((x: any) => ({ ...x, features: x.features || [] })));
       setServices((sv || []) as Service[]);
@@ -361,12 +361,17 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
               {barbers.map((b) => (
                 <div key={b.id} className="bg-card border border-border rounded-xl p-6 text-center hover:border-primary/40 transition-colors">
-                  <div className="h-16 w-16 rounded-full gold-gradient mx-auto mb-3 flex items-center justify-center">
-                    <Scissors className="h-7 w-7 text-primary-foreground" />
-                  </div>
+                  {b.photo_url ? (
+                    <img src={b.photo_url} alt={b.name} loading="lazy" className="h-20 w-20 rounded-full object-cover mx-auto mb-3 border-2 border-primary/40" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full gold-gradient mx-auto mb-3 flex items-center justify-center">
+                      <Scissors className="h-7 w-7 text-primary-foreground" />
+                    </div>
+                  )}
                   <p className="font-display text-lg tracking-wide">{b.name}</p>
                 </div>
               ))}
+
             </div>
           </div>
         </section>
