@@ -5,6 +5,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sendViaCloud(pnid: string, token: string, to: string, message: string) {
+  const cleaned = String(to).replace(/\D/g, "");
+  const r = await fetch(`https://graph.facebook.com/v20.0/${pnid}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: cleaned,
+      type: "text",
+      text: { body: String(message).slice(0, 4000) },
+    }),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || "Erro Cloud API");
+  return data;
+}
+
+async function sendViaBaileys(url: string, token: string | null, to: string, message: string) {
+  const clean = url.replace(/\/$/, "");
+  const r = await fetch(clean + "/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ to: String(to).replace(/\D/g, ""), message: String(message).slice(0, 4000) }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error || "Erro Baileys");
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -27,7 +59,6 @@ Deno.serve(async (req) => {
     const { to, message } = await req.json();
     if (!to || !message) throw new Error("Destinatário e mensagem são obrigatórios");
 
-    // Get owner -> whatsapp_settings
     const { data: role } = await admin
       .from("user_roles")
       .select("created_by")
@@ -37,33 +68,20 @@ Deno.serve(async (req) => {
     if (!role) throw new Error("Acesso negado");
     const ownerId = role.created_by || user.id;
 
-    const { data: settings } = await admin
+    const { data: s } = await admin
       .from("whatsapp_settings")
-      .select("phone_number_id, access_token")
+      .select("mode, phone_number_id, access_token, baileys_url, baileys_token")
       .eq("owner_id", ownerId)
       .maybeSingle();
-    if (!settings?.phone_number_id || !settings?.access_token) {
-      throw new Error("WhatsApp não configurado. Acesse Painel > WhatsApp.");
-    }
+    if (!s) throw new Error("WhatsApp não configurado.");
 
-    const cleaned = String(to).replace(/\D/g, "");
-    const r = await fetch(`https://graph.facebook.com/v20.0/${settings.phone_number_id}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${settings.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: cleaned,
-        type: "text",
-        text: { body: String(message).slice(0, 4000) },
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      console.error("WhatsApp API error", data);
-      throw new Error(data?.error?.message || "Erro ao enviar mensagem");
+    let data;
+    if (s.mode === "baileys") {
+      if (!s.baileys_url) throw new Error("Baileys não configurado.");
+      data = await sendViaBaileys(s.baileys_url, s.baileys_token, to, message);
+    } else {
+      if (!s.phone_number_id || !s.access_token) throw new Error("Cloud API não configurada.");
+      data = await sendViaCloud(s.phone_number_id, s.access_token, to, message);
     }
 
     return new Response(JSON.stringify({ ok: true, data }), {
