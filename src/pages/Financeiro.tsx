@@ -235,7 +235,17 @@ export default function Financeiro() {
                     >
                       {canceled ? "cancelado" : paid ? "pago" : "pendente"}
                     </Badge>
+                    {!canceled && s.mp_id && (
+                      <button
+                        onClick={() => handleCancelSub(s.mp_id!, s.client_name)}
+                        className="p-1 text-muted-foreground hover:text-destructive"
+                        title="Cancelar assinatura"
+                      >
+                        <Ban className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
+
                 </motion.div>
               );
             })}
