@@ -72,7 +72,10 @@ Deno.serve(async (req) => {
     let totalSent = 0;
 
     for (const s of shops) {
-      if (!s.phone_number_id || !s.access_token) continue;
+      const hasCloud = !!(s.phone_number_id && s.access_token);
+      const hasBaileys = s.mode === "baileys" && !!s.baileys_url;
+      if (!hasCloud && !hasBaileys) continue;
+
 
       const { data: shop } = await admin
         .from("barbershops")
