@@ -27,6 +27,7 @@ export type Database = {
           notes: string | null
           owner_id: string | null
           price: number
+          reminder_1h_sent_at: string | null
           reminder_sent_at: string | null
           service: string
           status: string
@@ -44,6 +45,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           price?: number
+          reminder_1h_sent_at?: string | null
           reminder_sent_at?: string | null
           service: string
           status?: string
@@ -61,6 +63,7 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           price?: number
+          reminder_1h_sent_at?: string | null
           reminder_sent_at?: string | null
           service?: string
           status?: string
@@ -77,6 +80,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          photo_url: string | null
           updated_at: string
         }
         Insert: {
@@ -87,6 +91,7 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          photo_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -97,6 +102,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          photo_url?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -735,10 +741,92 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversations: {
+        Row: {
+          context: Json
+          created_at: string
+          escalated: boolean
+          id: string
+          last_message_at: string
+          owner_id: string
+          phone: string
+          state: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          escalated?: boolean
+          id?: string
+          last_message_at?: string
+          owner_id: string
+          phone: string
+          state?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          escalated?: boolean
+          id?: string
+          last_message_at?: string
+          owner_id?: string
+          phone?: string
+          state?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          conversation_id: string | null
+          created_at: string
+          direction: string
+          id: string
+          owner_id: string
+          phone: string
+        }
+        Insert: {
+          body: string
+          conversation_id?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          owner_id: string
+          phone: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          owner_id?: string
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_settings: {
         Row: {
           access_token: string | null
+          baileys_status: string | null
+          baileys_token: string | null
+          baileys_url: string | null
+          birthday_discount_percent: number
           birthday_enabled: boolean | null
+          birthday_valid_days: number
           bot_enabled: boolean | null
           business_account_id: string | null
           confirmation_enabled: boolean | null
@@ -747,19 +835,27 @@ export type Database = {
           expiration_enabled: boolean | null
           expiration_lead_days: number | null
           id: string
+          mode: string
           owner_id: string
           phone_number_id: string | null
+          reminder_1h_enabled: boolean
           reminder_enabled: boolean | null
           reminder_lead_hours: number | null
           template_birthday: string | null
           template_confirmation: string | null
           template_expiration: string | null
           template_reminder: string | null
+          template_reminder_1h: string | null
           updated_at: string
         }
         Insert: {
           access_token?: string | null
+          baileys_status?: string | null
+          baileys_token?: string | null
+          baileys_url?: string | null
+          birthday_discount_percent?: number
           birthday_enabled?: boolean | null
+          birthday_valid_days?: number
           bot_enabled?: boolean | null
           business_account_id?: string | null
           confirmation_enabled?: boolean | null
@@ -768,19 +864,27 @@ export type Database = {
           expiration_enabled?: boolean | null
           expiration_lead_days?: number | null
           id?: string
+          mode?: string
           owner_id: string
           phone_number_id?: string | null
+          reminder_1h_enabled?: boolean
           reminder_enabled?: boolean | null
           reminder_lead_hours?: number | null
           template_birthday?: string | null
           template_confirmation?: string | null
           template_expiration?: string | null
           template_reminder?: string | null
+          template_reminder_1h?: string | null
           updated_at?: string
         }
         Update: {
           access_token?: string | null
+          baileys_status?: string | null
+          baileys_token?: string | null
+          baileys_url?: string | null
+          birthday_discount_percent?: number
           birthday_enabled?: boolean | null
+          birthday_valid_days?: number
           bot_enabled?: boolean | null
           business_account_id?: string | null
           confirmation_enabled?: boolean | null
@@ -789,14 +893,17 @@ export type Database = {
           expiration_enabled?: boolean | null
           expiration_lead_days?: number | null
           id?: string
+          mode?: string
           owner_id?: string
           phone_number_id?: string | null
+          reminder_1h_enabled?: boolean
           reminder_enabled?: boolean | null
           reminder_lead_hours?: number | null
           template_birthday?: string | null
           template_confirmation?: string | null
           template_expiration?: string | null
           template_reminder?: string | null
+          template_reminder_1h?: string | null
           updated_at?: string
         }
         Relationships: []
