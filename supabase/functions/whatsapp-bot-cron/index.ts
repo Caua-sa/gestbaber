@@ -148,7 +148,48 @@ Deno.serve(async (req) => {
           if (r.ok) {
             await admin.from("appointments").update({ reminder_sent_at: new Date().toISOString() }).eq("id", a.id);
             totalSent++;
+      }
+
+      // 2b) Reminder 1h antes (janela 55-75 min à frente)
+      if (s.reminder_1h_enabled) {
+        const minStart = new Date(now.getTime() + 55 * 60 * 1000);
+        const minEnd = new Date(now.getTime() + 75 * 60 * 1000);
+        const dateStr = minStart.toISOString().slice(0, 10);
+        const hhStart = minStart.toISOString().slice(11, 16);
+        const hhEnd = minEnd.toISOString().slice(11, 16);
+        const { data: appts } = await admin
+          .from("appointments")
+          .select("id,user_id,client_name,appointment_date,appointment_time,services(name)")
+          .eq("owner_id", s.owner_id)
+          .is("reminder_1h_sent_at", null)
+          .eq("appointment_date", dateStr)
+          .gte("appointment_time", hhStart + ":00")
+          .lte("appointment_time", hhEnd + ":00")
+          .in("status", ["agendado", "confirmado"])
+          .limit(50);
+        for (const a of appts || []) {
+          let phone: string | null = null;
+          let name = a.client_name || "cliente";
+          if (a.user_id) {
+            const { data: p } = await admin.from("profiles").select("phone,full_name").eq("user_id", a.user_id).maybeSingle();
+            phone = p?.phone || null;
+            name = p?.full_name || name;
           }
+          if (!phone) continue;
+          const msg = fill(s.template_reminder_1h || "Faltam ~1h pro seu horário em {barbearia}!", {
+            nome: name, barbearia: shopName,
+            hora: (a.appointment_time || "").slice(0, 5),
+            servico: (a as any).services?.name || "atendimento",
+          });
+          const r = await sendWA(s, phone, msg);
+          if (r.ok) {
+            await admin.from("appointments").update({ reminder_1h_sent_at: new Date().toISOString() }).eq("id", a.id);
+            totalSent++;
+          }
+        }
+      }
+
+
         }
       }
 
@@ -204,7 +245,13 @@ Deno.serve(async (req) => {
             .eq("owner_id", s.owner_id)
             .eq("user_id", p.user_id);
           if (!count) continue;
-          const msg = fill(s.template_birthday, { nome: p.full_name || "cliente", barbearia: shopName });
+          const msg = fill(s.template_birthday, {
+            nome: p.full_name || "cliente",
+            barbearia: shopName,
+            desconto: s.birthday_discount_percent ?? 10,
+            validade: s.birthday_valid_days ?? 1,
+          });
+
           const r = await sendWA(s.phone_number_id, s.access_token, p.phone!, msg);
           if (r.ok) {
             await admin.from("profiles").update({ birthday_greeted_year: year }).eq("user_id", p.user_id);
