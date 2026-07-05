@@ -22,7 +22,7 @@ interface CartItem {
   qty: number;
 }
 
-const DISCOUNT_PERCENT = 10;
+const DEFAULT_DISCOUNT = 10;
 
 export function ClienteLoja() {
   const { user } = useAuth();
@@ -32,7 +32,8 @@ export function ClienteLoja() {
   const [loading, setLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [processing, setProcessing] = useState<"mp" | "shop" | null>(null);
-  const [birthdayToday, setBirthdayToday] = useState(false);
+  const [birthdayDiscount, setBirthdayDiscount] = useState<number>(0);
+
 
   useEffect(() => {
     supabase
@@ -49,17 +50,19 @@ export function ClienteLoja() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("birthday").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => {
-        if (!data?.birthday) return;
-        const d = new Date(data.birthday);
-        const now = new Date();
-        if (d.getUTCMonth() === now.getMonth() && d.getUTCDate() === now.getDate()) {
-          setBirthdayToday(true);
-        }
-      });
-  }, [user]);
+    if (!user || !shop) return;
+    (async () => {
+      const { data: p } = await supabase.from("profiles").select("birthday").eq("user_id", user.id).maybeSingle();
+      if (!p?.birthday) return;
+      const d = new Date(p.birthday);
+      const now = new Date();
+      if (d.getUTCMonth() !== now.getMonth() || d.getUTCDate() !== now.getDate()) return;
+      // Fetch discount % from whatsapp_settings
+      const { data: ws } = await supabase.from("whatsapp_settings").select("birthday_discount_percent").eq("owner_id", shop.owner_id).maybeSingle();
+      setBirthdayDiscount(ws?.birthday_discount_percent ?? DEFAULT_DISCOUNT);
+    })();
+  }, [user, shop]);
+
 
   const addToCart = (p: Product) => {
     setCart((prev) => {
@@ -75,13 +78,15 @@ export function ClienteLoja() {
     setCart((prev) => prev.map((c) => (c.product.id === id ? { ...c, qty: c.qty - 1 } : c)).filter((c) => c.qty > 0));
 
   const subtotal = cart.reduce((s, c) => s + c.qty * Number(c.product.sell_price), 0);
-  const discount = birthdayToday ? subtotal * (DISCOUNT_PERCENT / 100) : 0;
+  const discount = birthdayDiscount > 0 ? subtotal * (birthdayDiscount / 100) : 0;
+
   const cartTotal = subtotal - discount;
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const insertOrders = async (status: "aguardando_pagamento" | "pendente") => {
     if (!user) return null;
-    const factor = birthdayToday ? 1 - DISCOUNT_PERCENT / 100 : 1;
+    const factor = birthdayDiscount > 0 ? 1 - birthdayDiscount / 100 : 1;
+
     const rows = cart.map((c) => {
       const unit = Number(c.product.sell_price) * factor;
       return {
@@ -197,12 +202,13 @@ export function ClienteLoja() {
                 <span className="font-medium">{fmt(c.qty * Number(c.product.sell_price))}</span>
               </div>
             ))}
-            {birthdayToday && (
+            {birthdayDiscount > 0 && (
               <div className="flex justify-between text-sm text-primary border-t border-border/50 pt-2">
-                <span className="flex items-center gap-1.5"><Cake className="h-3.5 w-3.5" /> Desconto aniversário ({DISCOUNT_PERCENT}%)</span>
+                <span className="flex items-center gap-1.5"><Cake className="h-3.5 w-3.5" /> Desconto aniversário ({birthdayDiscount}%)</span>
                 <span className="font-medium">−{fmt(discount)}</span>
               </div>
             )}
+
           </div>
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="font-display text-lg">Total: <span className="text-primary">{fmt(cartTotal)}</span></span>

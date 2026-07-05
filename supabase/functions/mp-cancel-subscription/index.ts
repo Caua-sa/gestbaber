@@ -28,13 +28,22 @@ Deno.serve(async (req) => {
     if (!mp_subscription_id) throw new Error("Assinatura não informada");
     const cancelMode = mode === "end_of_cycle" ? "end_of_cycle" : "now";
 
-    const { data: mpSub } = await admin
-      .from("mp_subscriptions")
-      .select("*")
-      .eq("id", mp_subscription_id)
+    // Check if caller is admin/owner of this shop (to cancel any client sub)
+    const { data: role } = await admin
+      .from("user_roles")
+      .select("role, created_by")
       .eq("user_id", userData.user.id)
+      .eq("role", "admin")
       .maybeSingle();
+    const callerOwnerId = role?.created_by || userData.user.id;
+    const isAdmin = !!role;
+
+    const q = admin.from("mp_subscriptions").select("*").eq("id", mp_subscription_id);
+    const { data: mpSub } = isAdmin
+      ? await q.eq("admin_user_id", callerOwnerId).maybeSingle()
+      : await q.eq("user_id", userData.user.id).maybeSingle();
     if (!mpSub) throw new Error("Assinatura não encontrada");
+
 
     // Get admin MP token
     const { data: settings } = await admin
