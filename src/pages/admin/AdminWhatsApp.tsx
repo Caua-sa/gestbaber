@@ -173,48 +173,105 @@ export default function AdminWhatsApp() {
 
           {/* QR / Baileys */}
           <TabsContent value="qr" className="mt-4">
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="font-display text-lg">Conectar via QR (WhatsApp Web)</p>
-                  <p className="text-xs text-muted-foreground">Requer servidor Baileys externo. Veja <code>baileys-server/README.md</code>.</p>
+                  <p className="text-xs text-muted-foreground">Escaneie um QR Code e pronto — sem burocracia, usa seu WhatsApp normal.</p>
                 </div>
                 <Badge variant="outline" className={qrStatus === "connected" ? "border-success/40 text-success" : "border-muted-foreground/30 text-muted-foreground"}>
-                  {qrStatus}
+                  {qrStatus === "connected" ? "✓ Conectado" : qrStatus === "waiting_qr" ? "Aguardando QR" : "Desconectado"}
                 </Badge>
               </div>
-              <div className="flex items-center gap-3">
-                <Switch checked={form.mode === "baileys"} onCheckedChange={(v) => setForm({ ...form, mode: v ? "baileys" : "cloud" })} />
-                <span className="text-sm">Usar Baileys como envio padrão</span>
-              </div>
-              <div className="space-y-2">
-                <Label>URL do servidor Baileys</Label>
-                <Input value={form.baileys_url} onChange={(e) => setForm({ ...form, baileys_url: e.target.value })} placeholder="https://seu-servidor.up.railway.app" />
-              </div>
-              <div className="space-y-2">
-                <Label>Token compartilhado (SHARED_TOKEN)</Label>
-                <Input type="password" value={form.baileys_token} onChange={(e) => setForm({ ...form, baileys_token: e.target.value })} />
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={save} disabled={saving} className="gold-gradient text-primary-foreground gap-2">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar
-                </Button>
-                <Button onClick={fetchQr} disabled={loadingQr || !form.baileys_url} variant="outline" className="gap-2">
-                  {loadingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />} Gerar QR
-                </Button>
-                <Button onClick={checkStatus} variant="ghost" size="sm" className="gap-1"><RefreshCw className="h-3 w-3" /> Status</Button>
-                <a href="https://web.whatsapp.com" target="_blank" rel="noreferrer" className="text-sm text-primary flex items-center gap-1 ml-auto">
-                  <ExternalLink className="h-3 w-3" /> WhatsApp Web
-                </a>
-              </div>
-              {qrData && (
-                <div className="border border-border rounded-lg p-4 flex flex-col items-center gap-2 bg-background">
-                  <img src={qrData} alt="QR Code" className="w-64 h-64" />
-                  <p className="text-xs text-muted-foreground text-center">
-                    No celular: WhatsApp → ⋮ → Aparelhos conectados → Conectar aparelho → escaneie o QR.
-                  </p>
+
+              {/* Passo 1: Deploy do servidor */}
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">1</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Suba o servidor com 1 clique</p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Vamos hospedar seu servidor WhatsApp pessoal no Railway (grátis para começar).
+                      Depois de subir, copie a URL pública gerada e cole abaixo.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href="https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fadiwajshing%2FBaileys"
+                        target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md bg-[#0B0D0E] hover:bg-[#1a1d20] text-white text-xs font-medium px-3 py-2 border border-white/10"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Deploy no Railway
+                      </a>
+                      <a
+                        href="https://render.com/deploy"
+                        target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md bg-secondary hover:bg-secondary/80 text-xs font-medium px-3 py-2 border border-border"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Deploy no Render
+                      </a>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Código pronto em <code>baileys-server/</code> (server.js, package.json). Passo a passo em <code>baileys-server/README.md</code>.
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Passo 2: URL + Token */}
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full bg-secondary text-foreground text-xs font-bold flex items-center justify-center shrink-0">2</div>
+                  <div className="flex-1 space-y-3">
+                    <p className="text-sm font-medium">Cole a URL do seu servidor</p>
+                    <div className="space-y-2">
+                      <Label>URL pública</Label>
+                      <Input value={form.baileys_url} onChange={(e) => setForm({ ...form, baileys_url: e.target.value })} placeholder="https://seu-servidor.up.railway.app" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Token de segurança (opcional)</Label>
+                      <Input type="password" value={form.baileys_token} onChange={(e) => setForm({ ...form, baileys_token: e.target.value })} placeholder="SHARED_TOKEN definido no servidor" />
+                    </div>
+                    <div className="flex items-center gap-3 pt-1">
+                      <Switch checked={form.mode === "baileys"} onCheckedChange={(v) => setForm({ ...form, mode: v ? "baileys" : "cloud" })} />
+                      <span className="text-sm">Usar este servidor para enviar as mensagens</span>
+                    </div>
+                    <Button onClick={save} disabled={saving} className="gold-gradient text-primary-foreground gap-2">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Salvar configuração
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Passo 3: QR */}
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="h-7 w-7 rounded-full bg-secondary text-foreground text-xs font-bold flex items-center justify-center shrink-0">3</div>
+                  <div className="flex-1 space-y-3">
+                    <p className="text-sm font-medium">Escaneie o QR com seu WhatsApp</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button onClick={fetchQr} disabled={loadingQr || !form.baileys_url} className="gap-2">
+                        {loadingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />} Gerar QR Code
+                      </Button>
+                      <Button onClick={checkStatus} variant="outline" size="sm" className="gap-1"><RefreshCw className="h-3 w-3" /> Atualizar status</Button>
+                      <a href="https://web.whatsapp.com" target="_blank" rel="noreferrer" className="text-sm text-primary flex items-center gap-1 ml-auto self-center">
+                        <ExternalLink className="h-3 w-3" /> Abrir WhatsApp Web
+                      </a>
+                    </div>
+                    {qrData ? (
+                      <div className="border border-border rounded-lg p-4 flex flex-col items-center gap-2 bg-white">
+                        <img src={qrData} alt="QR Code" className="w-64 h-64" />
+                        <p className="text-xs text-muted-foreground text-center max-w-sm">
+                          No celular: <b>WhatsApp → ⋮ → Aparelhos conectados → Conectar aparelho</b> e aponte para o QR.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="border border-dashed border-border rounded-lg p-8 text-center text-xs text-muted-foreground">
+                        Clique em <b>Gerar QR Code</b> depois de configurar a URL acima.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
