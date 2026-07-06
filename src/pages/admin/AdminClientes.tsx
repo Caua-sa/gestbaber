@@ -343,6 +343,9 @@ export default function AdminClientes() {
                   <Button size="sm" variant="outline" className="flex-1 gap-1.5" disabled={!c.phone} onClick={() => renewLink(c)}>
                     <MessageCircle className="h-3.5 w-3.5" /> Avisar vencimento
                   </Button>
+                  <Button size="sm" variant="ghost" onClick={() => openEdit(c)} title="Editar">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(c)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
