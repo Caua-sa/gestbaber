@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
-type Tab = "inicio" | "loja" | "planos" | "agendar" | "meus-agendamentos";
+type Tab = "inicio" | "loja" | "planos" | "agendar" | "meus-agendamentos" | "perfil";
 
 interface ActiveSub {
   id: string;
