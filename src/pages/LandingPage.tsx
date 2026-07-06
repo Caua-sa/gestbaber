@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { applyShopBranding } from "@/lib/siteBranding";
+import { applyShopBranding, shareShop } from "@/lib/siteBranding";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ClienteChat } from "@/components/cliente/ClienteChat";
 
