@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText } from "lucide-react";
+import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText, Bell, Volume2, VolumeX } from "lucide-react";
 import { generateReceiptPDF } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
