@@ -484,6 +484,9 @@ export default function Agendamento() {
             {appointments.map((app, i) => {
               const note = parseNote(app.notes);
               const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.pendente;
+              const profile = app.user_id ? profileNames[app.user_id] : undefined;
+              const displayName = profile?.name || note.name;
+              const displayPhone = note.phone || profile?.phone || "";
               return (
                 <motion.div key={app.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ delay: i * 0.04 }}
                   className="bg-card border border-border rounded-xl p-4 hover:border-primary/40 transition-colors group">
@@ -494,7 +497,7 @@ export default function Agendamento() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium truncate">{note.name}</p>
+                        <p className="font-medium truncate flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-primary" />{displayName}</p>
                         <span className={cn("text-[10px] px-2 py-0.5 rounded-full border", cfg.classes)}>{cfg.label}</span>
                         {app.price != null && Number(app.price) > 0 && (
                           <span className="text-[10px] text-primary font-medium">{fmt(Number(app.price))}</span>
@@ -503,12 +506,15 @@ export default function Agendamento() {
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                         <span className="inline-flex items-center gap-1"><Scissors className="h-3 w-3" />{app.service}</span>
                         {app.barber && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{app.barber}</span>}
-                        {note.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{note.phone}</span>}
+                        {displayPhone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{displayPhone}</span>}
                       </div>
                       {note.obs && <p className="text-xs text-muted-foreground/80 mt-1 italic truncate">"{note.obs}"</p>}
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
+                        <Bell className="h-3.5 w-3.5" /> Avisar
+                      </Button>
                       <Select value={app.status} onValueChange={(v) => handleStatusChange(app, v)}>
                         <SelectTrigger className="w-[130px] bg-secondary border-border text-xs h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
