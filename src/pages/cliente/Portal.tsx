@@ -33,7 +33,7 @@ export default function ClientePortal() {
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const t = searchParams.get("tab") as Tab | null;
-    if (t && ["inicio","loja","planos","agendar","meus-agendamentos"].includes(t)) setTab(t);
+    if (t && ["inicio","loja","planos","agendar","meus-agendamentos","perfil"].includes(t)) setTab(t);
   }, [searchParams]);
   const [activeSub, setActiveSub] = useState<ActiveSub | null>(null);
   const [nextAppt, setNextAppt] = useState<any>(null);
