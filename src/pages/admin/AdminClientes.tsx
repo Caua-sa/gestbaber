@@ -57,6 +57,25 @@ export default function AdminClientes() {
   const [shopName, setShopName] = useState<string>("");
 
   const [form, setForm] = useState({ full_name: "", email: "", password: "", phone: "", birthday: "" });
+  const [editing, setEditing] = useState<Client | null>(null);
+
+  const openEdit = (c: Client) => {
+    setEditing(c);
+    setForm({
+      full_name: c.full_name || "",
+      email: c.email || "",
+      password: "",
+      phone: c.phone || "",
+      birthday: c.birthday ? c.birthday.slice(0, 10) : "",
+    });
+    setOpen(true);
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ full_name: "", email: "", password: "", phone: "", birthday: "" });
+    setOpen(true);
+  };
 
   const callFn = async (body: any) => {
     const { data: { session } } = await supabase.auth.getSession();
