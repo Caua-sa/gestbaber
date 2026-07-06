@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scissors, MapPin, Phone, Instagram, Facebook, MessageCircle, Star, ChevronRight, Crown, Check, Loader2, Sparkles } from "lucide-react";
+import { Scissors, MapPin, Phone, Instagram, Facebook, MessageCircle, Star, ChevronRight, Crown, Check, Loader2, Sparkles, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { applyShopBranding } from "@/lib/siteBranding";
+import { applyShopBranding, shareShop } from "@/lib/siteBranding";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ClienteChat } from "@/components/cliente/ClienteChat";
 
@@ -195,6 +195,22 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              aria-label="Compartilhar barbearia"
+              onClick={async () => {
+                const r = await shareShop({
+                  name: shop.name,
+                  description: shop.description,
+                  logo_url: shop.logo_url,
+                });
+                if (r === "copied") toast.success("Link copiado!");
+                else if (r === "failed") toast.error("Não foi possível compartilhar");
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
             {user ? (
               <Link to="/cliente"><Button size="sm" variant="outline">Meu Portal</Button></Link>
             ) : (
