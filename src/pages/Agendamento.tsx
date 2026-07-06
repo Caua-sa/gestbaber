@@ -299,6 +299,7 @@ export default function Agendamento() {
           <Button variant="outline" size="icon" onClick={() => setSoundOn(v => !v)} title={soundOn ? "Silenciar" : "Ativar som"}>
             {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
           </Button>
+          <Dialog open={walkOpen} onOpenChange={setWalkOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" disabled={noServices}>
                 <Zap className="mr-2 h-4 w-4" /> Atendimento avulso
