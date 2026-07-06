@@ -296,7 +296,9 @@ export default function Agendamento() {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <Dialog open={walkOpen} onOpenChange={setWalkOpen}>
+          <Button variant="outline" size="icon" onClick={() => setSoundOn(v => !v)} title={soundOn ? "Silenciar" : "Ativar som"}>
+            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-muted-foreground" />}
+          </Button>
             <DialogTrigger asChild>
               <Button variant="outline" disabled={noServices}>
                 <Zap className="mr-2 h-4 w-4" /> Atendimento avulso
