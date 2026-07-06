@@ -87,25 +87,35 @@ export default function ClienteLogin() {
   };
 
   const sendOtp = async () => {
-    const ph = normalizePhone(phone);
-    if (!ph) { toast.error("Informe o WhatsApp"); return; }
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) { toast.error("Informe o WhatsApp com DDD"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: ph });
+    const { data, error } = await supabase.functions.invoke("signup-send-otp", {
+      body: { phone: digits, full_name: fullName || undefined },
+    });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || "Erro"); return; }
     setOtpSent(true);
-    toast.success("Código enviado por SMS/WhatsApp");
+    toast.success("Código enviado no seu WhatsApp");
   };
 
   const verifyOtp = async () => {
-    const ph = normalizePhone(phone);
+    const digits = phone.replace(/\D/g, "");
     if (!otp) { toast.error("Informe o código"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({ phone: ph, token: otp, type: "sms" });
+    const { data, error } = await supabase.functions.invoke("signup-verify-otp", {
+      body: { phone: digits, code: otp },
+    });
+    if (error || (data as any)?.error) {
+      setLoading(false);
+      toast.error((data as any)?.error || error?.message || "Código inválido");
+      return;
+    }
+    const { email: em, password: pw } = data as { email: string; password: string };
+    const { error: signErr } = await supabase.auth.signInWithPassword({ email: em, password: pw });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (signErr) { toast.error(signErr.message); return; }
     toast.success("Bem-vindo!");
-    // useEffect will pick up the user and decide onboarding/redirect
   };
 
   const completeOnboarding = async () => {
@@ -171,6 +181,15 @@ export default function ClienteLogin() {
               {!otpSent ? (
                 <>
                   <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Seu nome"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 bg-secondary border-border"
+                    />
+                  </div>
+                  <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="WhatsApp (com DDD)"
@@ -180,10 +199,10 @@ export default function ClienteLogin() {
                     />
                   </div>
                   <Button onClick={sendOtp} disabled={loading} className="w-full">
-                    {loading ? "Enviando..." : "Receber código"}
+                    {loading ? "Enviando..." : "Receber código no WhatsApp"}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    Enviaremos um código de 6 dígitos para validar seu número.
+                    Enviaremos um código de 6 dígitos direto no seu WhatsApp.
                   </p>
                 </>
               ) : (

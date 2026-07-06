@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.whatsapp-bot-cron]
 verify_jwt = false
+
+[functions.signup-send-otp]
+verify_jwt = false
+
+[functions.signup-verify-otp]
+verify_jwt = false

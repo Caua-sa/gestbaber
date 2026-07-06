@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Crown, Calendar, LogOut, ShoppingBag, Sparkles, Scissors, Clock, MapPin, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Crown, Calendar, LogOut, ShoppingBag, Sparkles, Scissors, Clock, MapPin, X, CheckCircle2, AlertCircle, Loader2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -12,11 +12,12 @@ import { ClienteAgendamento } from "@/components/cliente/ClienteAgendamento";
 import { ClienteMeusAgendamentos } from "@/components/cliente/ClienteMeusAgendamentos";
 import { ClienteLoja } from "@/components/cliente/ClienteLoja";
 import { ClienteChat } from "@/components/cliente/ClienteChat";
+import { ClientePerfil } from "@/components/cliente/ClientePerfil";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
-type Tab = "inicio" | "loja" | "planos" | "agendar" | "meus-agendamentos";
+type Tab = "inicio" | "loja" | "planos" | "agendar" | "meus-agendamentos" | "perfil";
 
 interface ActiveSub {
   id: string;
@@ -32,7 +33,7 @@ export default function ClientePortal() {
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const t = searchParams.get("tab") as Tab | null;
-    if (t && ["inicio","loja","planos","agendar","meus-agendamentos"].includes(t)) setTab(t);
+    if (t && ["inicio","loja","planos","agendar","meus-agendamentos","perfil"].includes(t)) setTab(t);
   }, [searchParams]);
   const [activeSub, setActiveSub] = useState<ActiveSub | null>(null);
   const [nextAppt, setNextAppt] = useState<any>(null);
@@ -132,6 +133,7 @@ export default function ClientePortal() {
     { id: "meus-agendamentos", label: "Agendamentos", icon: Clock },
     { id: "planos", label: "Planos", icon: Crown },
     { id: "loja", label: "Loja", icon: ShoppingBag },
+    { id: "perfil", label: "Meus Dados", icon: UserCog },
   ];
 
   const firstName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "cliente";
@@ -363,6 +365,7 @@ export default function ClientePortal() {
           {tab === "planos" && <ClientePlanos />}
           {tab === "agendar" && <ClienteAgendamento />}
           {tab === "meus-agendamentos" && <ClienteMeusAgendamentos />}
+          {tab === "perfil" && <ClientePerfil />}
         </motion.div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Mail, Phone, CalendarCheck, Crown, Search, UserPlus, Trash2, Loader2, MessageCircle, AlertTriangle, Cake } from "lucide-react";
+import { Users, Mail, Phone, CalendarCheck, Crown, Search, UserPlus, Trash2, Loader2, MessageCircle, AlertTriangle, Cake, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -57,6 +57,25 @@ export default function AdminClientes() {
   const [shopName, setShopName] = useState<string>("");
 
   const [form, setForm] = useState({ full_name: "", email: "", password: "", phone: "", birthday: "" });
+  const [editing, setEditing] = useState<Client | null>(null);
+
+  const openEdit = (c: Client) => {
+    setEditing(c);
+    setForm({
+      full_name: c.full_name || "",
+      email: c.email || "",
+      password: "",
+      phone: c.phone || "",
+      birthday: c.birthday ? c.birthday.slice(0, 10) : "",
+    });
+    setOpen(true);
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ full_name: "", email: "", password: "", phone: "", birthday: "" });
+    setOpen(true);
+  };
 
   const callFn = async (body: any) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -88,21 +107,40 @@ export default function AdminClientes() {
     e.preventDefault();
     setSaving(true);
     try {
-      await callFn({
-        action: "create",
-        email: form.email.trim(),
-        password: form.password,
-        full_name: form.full_name.trim(),
-        phone: form.phone.trim() || null,
-        birthday: form.birthday || null,
-        role: "user",
-      });
-      toast.success("Cliente cadastrado!");
+      if (editing) {
+        await callFn({
+          action: "update",
+          user_id: editing.user_id,
+          email: form.email.trim(),
+          password: form.password || undefined,
+          full_name: form.full_name.trim(),
+          role: "user",
+        });
+        // Também atualiza dados extras (telefone/aniversário) na tabela profiles
+        await supabase.from("profiles").update({
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim() || null,
+          birthday: form.birthday || null,
+        }).eq("user_id", editing.user_id);
+        toast.success("Cliente atualizado!");
+      } else {
+        await callFn({
+          action: "create",
+          email: form.email.trim(),
+          password: form.password,
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim() || null,
+          birthday: form.birthday || null,
+          role: "user",
+        });
+        toast.success("Cliente cadastrado!");
+      }
       setOpen(false);
+      setEditing(null);
       setForm({ full_name: "", email: "", password: "", phone: "", birthday: "" });
       load();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao cadastrar cliente");
+      toast.error(err.message || "Erro ao salvar cliente");
     }
     setSaving(false);
   };
@@ -172,15 +210,15 @@ export default function AdminClientes() {
             Cadastre, remova e consulte clientes. Aniversariantes ganham 10% de desconto automático.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button className="gold-gradient text-primary-foreground">
+            <Button onClick={openCreate} className="gold-gradient text-primary-foreground">
               <UserPlus className="mr-2 h-4 w-4" /> Novo Cliente
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="font-display text-xl">Cadastrar Cliente</DialogTitle>
+              <DialogTitle className="font-display text-xl">{editing ? "Editar Cliente" : "Cadastrar Cliente"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-3 mt-2">
               <Input placeholder="Nome completo" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
@@ -190,9 +228,9 @@ export default function AdminClientes() {
                 <label className="text-xs text-muted-foreground">🎂 Data de aniversário (o cliente ganha desconto automático na loja no dia)</label>
                 <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
               </div>
-              <Input type="password" placeholder="Senha de acesso" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+              <Input type="password" placeholder={editing ? "Nova senha (deixe vazio p/ manter)" : "Senha de acesso"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} minLength={editing ? 0 : 6} />
               <Button type="submit" className="w-full" disabled={saving}>
-                {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : "Cadastrar cliente"}
+                {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : editing ? "Salvar alterações" : "Cadastrar cliente"}
               </Button>
             </form>
           </DialogContent>
@@ -304,6 +342,9 @@ export default function AdminClientes() {
                 <div className="flex gap-2 pt-2 border-t border-border/50">
                   <Button size="sm" variant="outline" className="flex-1 gap-1.5" disabled={!c.phone} onClick={() => renewLink(c)}>
                     <MessageCircle className="h-3.5 w-3.5" /> Avisar vencimento
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => openEdit(c)} title="Editar">
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(c)}>
                     <Trash2 className="h-4 w-4" />
