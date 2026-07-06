@@ -365,6 +365,7 @@ export default function ClientePortal() {
           {tab === "planos" && <ClientePlanos />}
           {tab === "agendar" && <ClienteAgendamento />}
           {tab === "meus-agendamentos" && <ClienteMeusAgendamentos />}
+          {tab === "perfil" && <ClientePerfil />}
         </motion.div>
       </div>
 
