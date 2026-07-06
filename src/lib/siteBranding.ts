@@ -88,9 +88,9 @@ export async function shareShop(shop: ShopBranding & { url?: string }) {
       const res = await fetch(shop.logo_url, { mode: "cors" });
       const blob = await res.blob();
       const file = new File([blob], "barbearia.png", { type: blob.type || "image/png" });
-      const data: ShareData = { title, text, url, files: [file] };
-      // @ts-expect-error canShare with files not in older TS lib
-      if (navigator.canShare?.(data)) {
+      const data = { title, text, url, files: [file] } as ShareData;
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+      if (nav.canShare?.(data)) {
         await navigator.share(data);
         return "shared" as const;
       }
