@@ -107,21 +107,40 @@ export default function AdminClientes() {
     e.preventDefault();
     setSaving(true);
     try {
-      await callFn({
-        action: "create",
-        email: form.email.trim(),
-        password: form.password,
-        full_name: form.full_name.trim(),
-        phone: form.phone.trim() || null,
-        birthday: form.birthday || null,
-        role: "user",
-      });
-      toast.success("Cliente cadastrado!");
+      if (editing) {
+        await callFn({
+          action: "update",
+          user_id: editing.user_id,
+          email: form.email.trim(),
+          password: form.password || undefined,
+          full_name: form.full_name.trim(),
+          role: "user",
+        });
+        // Também atualiza dados extras (telefone/aniversário) na tabela profiles
+        await supabase.from("profiles").update({
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim() || null,
+          birthday: form.birthday || null,
+        }).eq("user_id", editing.user_id);
+        toast.success("Cliente atualizado!");
+      } else {
+        await callFn({
+          action: "create",
+          email: form.email.trim(),
+          password: form.password,
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim() || null,
+          birthday: form.birthday || null,
+          role: "user",
+        });
+        toast.success("Cliente cadastrado!");
+      }
       setOpen(false);
+      setEditing(null);
       setForm({ full_name: "", email: "", password: "", phone: "", birthday: "" });
       load();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao cadastrar cliente");
+      toast.error(err.message || "Erro ao salvar cliente");
     }
     setSaving(false);
   };
