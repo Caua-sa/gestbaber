@@ -195,6 +195,22 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              size="sm"
+              variant="outline"
+              aria-label="Compartilhar barbearia"
+              onClick={async () => {
+                const r = await shareShop({
+                  name: shop.name,
+                  description: shop.description,
+                  logo_url: shop.logo_url,
+                });
+                if (r === "copied") toast.success("Link copiado!");
+                else if (r === "failed") toast.error("Não foi possível compartilhar");
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
             {user ? (
               <Link to="/cliente"><Button size="sm" variant="outline">Meu Portal</Button></Link>
             ) : (
