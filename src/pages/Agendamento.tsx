@@ -80,18 +80,90 @@ export default function Agendamento() {
     setBarbers(brb || []);
   };
 
+  const [profileNames, setProfileNames] = useState<Record<string, { name: string; phone: string | null }>>({});
+  const [soundOn, setSoundOn] = useState(true);
+  const initialLoadRef = useRef(true);
+  const knownIds = useRef<Set<string>>(new Set());
+
+  const playBeep = () => {
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AC();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.55);
+    } catch { /* ignore */ }
+  };
+
+  const fetchProfiles = async (rows: Appointment[]) => {
+    const ids = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
+    if (ids.length === 0) return;
+    const { data } = await supabase.from("profiles").select("user_id, full_name, phone").in("user_id", ids);
+    const map: Record<string, { name: string; phone: string | null }> = {};
+    (data || []).forEach((p: any) => { map[p.user_id] = { name: p.full_name || "Cliente", phone: p.phone }; });
+    setProfileNames(prev => ({ ...prev, ...map }));
+  };
+
   const fetchAppointments = async () => {
     if (!user || !ownerId) return;
     setLoading(true);
     let query = supabase.from("appointments").select("*").eq("appointment_date", dateISO).order("appointment_time");
     query = shopId ? query.or(`owner_id.eq.${ownerId},barbershop_id.eq.${shopId}`) : query.eq("owner_id", ownerId);
     const { data } = await query;
-    setAppointments((data || []) as Appointment[]);
+    const rows = (data || []) as Appointment[];
+    setAppointments(rows);
+    knownIds.current = new Set(rows.map(r => r.id));
+    initialLoadRef.current = false;
+    fetchProfiles(rows);
     setLoading(false);
   };
 
   useEffect(() => { fetchMeta(); }, [user, ownerId]);
   useEffect(() => { fetchAppointments(); }, [dateISO, user, ownerId, shopId]);
+
+  // Realtime — novo agendamento cai instantaneamente + som
+  useEffect(() => {
+    if (!ownerId) return;
+    const channel = supabase
+      .channel("appointments-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments", filter: `owner_id=eq.${ownerId}` },
+        (payload) => {
+          const row: any = payload.new || payload.old;
+          if (!row || row.appointment_date !== dateISO) return;
+          if (payload.eventType === "INSERT") {
+            if (!knownIds.current.has(row.id)) {
+              knownIds.current.add(row.id);
+              if (soundOn && !initialLoadRef.current) playBeep();
+              toast.success(`Novo agendamento — ${row.appointment_time?.slice(0,5)}`);
+            }
+            fetchAppointments();
+          } else {
+            fetchAppointments();
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [ownerId, dateISO, soundOn]);
+
+  const notifyClient = async (app: Appointment) => {
+    const { data, error } = await supabase.functions.invoke("appointment-notify", {
+      body: { appointment_id: app.id },
+    });
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error || error?.message || "Falha ao avisar");
+      return;
+    }
+    toast.success("Cliente avisado no WhatsApp");
+  };
+
 
   const ensureTransaction = async (app: Appointment) => {
     if (!user || !ownerId) return;
