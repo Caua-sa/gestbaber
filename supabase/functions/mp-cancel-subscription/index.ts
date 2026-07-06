@@ -81,10 +81,14 @@ Deno.serve(async (req) => {
 
     if (mpSub.subscription_id) {
       const newStatus = cancelMode === "now" ? "cancelado" : "cancelando";
-      await admin
-        .from("subscriptions")
-        .update({ status: newStatus, cancel_mode: cancelMode, canceled_at: new Date().toISOString() })
-        .eq("id", mpSub.subscription_id);
+      const patch: Record<string, unknown> = {
+        status: newStatus,
+        cancel_mode: cancelMode,
+        canceled_at: new Date().toISOString(),
+      };
+      // Cancelamento imediato => remove acesso agora mesmo
+      if (cancelMode === "now") patch.expires_at = new Date().toISOString();
+      await admin.from("subscriptions").update(patch).eq("id", mpSub.subscription_id);
     }
 
     return new Response(JSON.stringify({ ok: true, mode: cancelMode }), {
