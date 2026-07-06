@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Crown, Calendar, LogOut, ShoppingBag, Sparkles, Scissors, Clock, MapPin, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Crown, Calendar, LogOut, ShoppingBag, Sparkles, Scissors, Clock, MapPin, X, CheckCircle2, AlertCircle, Loader2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
