@@ -210,15 +210,15 @@ export default function AdminClientes() {
             Cadastre, remova e consulte clientes. Aniversariantes ganham 10% de desconto automático.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button className="gold-gradient text-primary-foreground">
+            <Button onClick={openCreate} className="gold-gradient text-primary-foreground">
               <UserPlus className="mr-2 h-4 w-4" /> Novo Cliente
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="font-display text-xl">Cadastrar Cliente</DialogTitle>
+              <DialogTitle className="font-display text-xl">{editing ? "Editar Cliente" : "Cadastrar Cliente"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-3 mt-2">
               <Input placeholder="Nome completo" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
@@ -228,9 +228,9 @@ export default function AdminClientes() {
                 <label className="text-xs text-muted-foreground">🎂 Data de aniversário (o cliente ganha desconto automático na loja no dia)</label>
                 <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
               </div>
-              <Input type="password" placeholder="Senha de acesso" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+              <Input type="password" placeholder={editing ? "Nova senha (deixe vazio p/ manter)" : "Senha de acesso"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} minLength={editing ? 0 : 6} />
               <Button type="submit" className="w-full" disabled={saving}>
-                {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : "Cadastrar cliente"}
+                {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : editing ? "Salvar alterações" : "Cadastrar cliente"}
               </Button>
             </form>
           </DialogContent>
