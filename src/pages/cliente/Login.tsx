@@ -181,6 +181,15 @@ export default function ClienteLogin() {
               {!otpSent ? (
                 <>
                   <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Seu nome"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 bg-secondary border-border"
+                    />
+                  </div>
+                  <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="WhatsApp (com DDD)"
@@ -190,10 +199,10 @@ export default function ClienteLogin() {
                     />
                   </div>
                   <Button onClick={sendOtp} disabled={loading} className="w-full">
-                    {loading ? "Enviando..." : "Receber código"}
+                    {loading ? "Enviando..." : "Receber código no WhatsApp"}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    Enviaremos um código de 6 dígitos para validar seu número.
+                    Enviaremos um código de 6 dígitos direto no seu WhatsApp.
                   </p>
                 </>
               ) : (
