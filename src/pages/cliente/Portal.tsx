@@ -133,6 +133,7 @@ export default function ClientePortal() {
     { id: "meus-agendamentos", label: "Agendamentos", icon: Clock },
     { id: "planos", label: "Planos", icon: Crown },
     { id: "loja", label: "Loja", icon: ShoppingBag },
+    { id: "perfil", label: "Meus Dados", icon: UserCog },
   ];
 
   const firstName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "cliente";
