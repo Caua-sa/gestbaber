@@ -631,6 +631,39 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_otps: {
+        Row: {
+          attempts: number
+          code: string
+          created_at: string
+          expires_at: string
+          full_name: string | null
+          id: string
+          phone: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          code: string
+          created_at?: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          phone: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          code?: string
+          created_at?: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           barbershop_id: string | null
