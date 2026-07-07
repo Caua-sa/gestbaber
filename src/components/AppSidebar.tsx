@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +31,7 @@ const menuItems = [
 const siteItems = [
   { title: "Minha Barbearia", url: "/admin/barbearia", icon: Store },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
+  { title: "Marketing TV", url: "/admin/marketing", icon: Megaphone },
   { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },
   { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
 ];

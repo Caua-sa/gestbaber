@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { MessageCircle, Save, Send, Loader2, Bot, PlayCircle, QrCode, RefreshCw, ExternalLink } from "lucide-react";
+import { MessageCircle, Save, Send, Loader2, Bot, PlayCircle, QrCode, RefreshCw, ExternalLink, BookOpen } from "lucide-react";
+import WhatsAppGuide from "@/components/admin/WhatsAppGuide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -163,13 +164,19 @@ export default function AdminWhatsApp() {
       {!isOwner ? (
         <p className="text-sm text-warning bg-warning/10 border border-warning/30 rounded-lg p-3">Somente o dono da barbearia pode editar essas credenciais.</p>
       ) : (
-        <Tabs defaultValue="qr">
+        <Tabs defaultValue="guide">
           <TabsList>
+            <TabsTrigger value="guide"><BookOpen className="h-4 w-4 mr-1" /> Instalação</TabsTrigger>
             <TabsTrigger value="qr"><QrCode className="h-4 w-4 mr-1" /> QR Code</TabsTrigger>
             <TabsTrigger value="conn">Cloud API</TabsTrigger>
             <TabsTrigger value="bot"><Bot className="h-4 w-4 mr-1" /> Bot</TabsTrigger>
             <TabsTrigger value="test">Testar</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="guide" className="mt-4">
+            <WhatsAppGuide />
+          </TabsContent>
+
 
           {/* QR / Baileys */}
           <TabsContent value="qr" className="mt-4">
