@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { MessageCircle, Save, Send, Loader2, Bot, PlayCircle, QrCode, RefreshCw, ExternalLink } from "lucide-react";
+import { MessageCircle, Save, Send, Loader2, Bot, PlayCircle, QrCode, RefreshCw, ExternalLink, BookOpen } from "lucide-react";
+import WhatsAppGuide from "@/components/admin/WhatsAppGuide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
