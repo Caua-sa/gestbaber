@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Tv, Megaphone } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
