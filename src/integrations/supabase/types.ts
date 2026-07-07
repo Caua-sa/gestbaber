@@ -111,6 +111,7 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          banned: boolean
           birthday_discount_percent: number
           created_at: string
           description: string | null
@@ -130,6 +131,7 @@ export type Database = {
         Insert: {
           active?: boolean
           address?: string | null
+          banned?: boolean
           birthday_discount_percent?: number
           created_at?: string
           description?: string | null
@@ -149,6 +151,7 @@ export type Database = {
         Update: {
           active?: boolean
           address?: string | null
+          banned?: boolean
           birthday_discount_percent?: number
           created_at?: string
           description?: string | null
@@ -241,6 +244,59 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      marketing_media: {
+        Row: {
+          active: boolean
+          barbershop_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          link_url: string | null
+          media_type: string
+          media_url: string
+          owner_id: string
+          sort_order: number | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          barbershop_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          link_url?: string | null
+          media_type: string
+          media_url: string
+          owner_id: string
+          sort_order?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          barbershop_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          link_url?: string | null
+          media_type?: string
+          media_url?: string
+          owner_id?: string
+          sort_order?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_media_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mp_payments: {
         Row: {
