@@ -67,6 +67,9 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/site" element={<LandingPage />} />
             <Route path="/site/:slug" element={<BarbershopPublic />} />
+            <Route path="/tv/:slug" element={<TvAgenda />} />
+            <Route path="/configbarber" element={<SuperAdminBarbershops />} />
+
 
             {/* Client portal routes */}
             <Route path="/cliente/login" element={<ClienteLogin />} />
