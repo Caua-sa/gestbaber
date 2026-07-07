@@ -32,7 +32,6 @@ const siteItems = [
   { title: "Minha Barbearia", url: "/admin/barbearia", icon: Store },
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Marketing TV", url: "/admin/marketing", icon: Megaphone },
-  { title: "Tela TV", url: "#tv", icon: Tv, external: true },
   { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },
   { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
 ];
