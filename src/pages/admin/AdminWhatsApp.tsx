@@ -161,6 +161,23 @@ export default function AdminWhatsApp() {
         <p className="text-muted-foreground text-sm mt-1">Conecte via Meta Cloud API ou WhatsApp Web (QR) e configure o bot.</p>
       </div>
 
+      {ownerId && (
+        <div className="bg-card border border-primary/30 rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">ID da barbearia (owner_id)</p>
+            <code className="text-sm font-mono text-primary select-all break-all">{ownerId}</code>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { navigator.clipboard.writeText(ownerId); toast.success("ID copiado!"); }}
+          >
+            Copiar ID
+          </Button>
+        </div>
+      )}
+
+
       {!isOwner ? (
         <p className="text-sm text-warning bg-warning/10 border border-warning/30 rounded-lg p-3">Somente o dono da barbearia pode editar essas credenciais.</p>
       ) : (
