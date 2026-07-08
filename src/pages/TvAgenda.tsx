@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Scissors } from "lucide-react";
+import { ExternalLink, Scissors, Maximize2, Minimize2 } from "lucide-react";
 
 interface Barbershop { id: string; name: string; slug: string; logo_url: string | null; owner_id: string; active: boolean; banned: boolean; }
 interface Barber { id: string; name: string; photo_url: string | null; }
@@ -38,10 +38,51 @@ export default function TvAgenda() {
   const [mediaIdx, setMediaIdx] = useState(0);
   const [now, setNow] = useState(new Date());
   const timerRef = useRef<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [cursorHidden, setCursorHidden] = useState(false);
+  const idleRef = useRef<number | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
+  }, []);
+
+  // Fullscreen tracking
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    } catch {}
+  };
+
+  // Hide cursor after 3s idle
+  useEffect(() => {
+    const onMove = () => {
+      setCursorHidden(false);
+      if (idleRef.current) window.clearTimeout(idleRef.current);
+      idleRef.current = window.setTimeout(() => setCursorHidden(true), 3000);
+    };
+    onMove();
+    window.addEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      if (idleRef.current) window.clearTimeout(idleRef.current);
+    };
+  }, []);
+
+  // Auto-refresh full page daily at 3am to keep session healthy
+  useEffect(() => {
+    const check = setInterval(() => {
+      const d = new Date();
+      if (d.getHours() === 3 && d.getMinutes() === 0) window.location.reload();
+    }, 60_000);
+    return () => clearInterval(check);
   }, []);
 
   useEffect(() => {
@@ -106,22 +147,31 @@ export default function TvAgenda() {
   const current = media[mediaIdx];
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+    <div className={`min-h-screen bg-background text-foreground overflow-hidden ${cursorHidden ? "cursor-none" : ""}`}>
+      <header className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border">
         <div className="flex items-center gap-3">
           {shop.logo_url ? (
-            <img src={shop.logo_url} alt={shop.name} className="h-12 w-12 rounded-lg object-cover" />
+            <img src={shop.logo_url} alt={shop.name} className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover" />
           ) : (
-            <Scissors className="h-10 w-10 text-primary" />
+            <Scissors className="h-8 w-8 md:h-10 md:w-10 text-primary" />
           )}
           <div>
-            <h1 className="font-display text-3xl gold-text tracking-wide">{shop.name}</h1>
-            <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl gold-text tracking-wide">{shop.name}</h1>
+            <p className="text-[10px] md:text-xs text-muted-foreground capitalize">{dateStr}</p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="font-display text-5xl gold-text tabular-nums">{timeStr}</div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Agenda ao vivo</div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="font-display text-3xl md:text-5xl lg:text-6xl gold-text tabular-nums leading-none">{timeStr}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Ao vivo</div>
+          </div>
+          <button
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "Sair de tela cheia" : "Tela cheia"}
+            className="h-10 w-10 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center transition-colors opacity-60 hover:opacity-100"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
         </div>
       </header>
 
