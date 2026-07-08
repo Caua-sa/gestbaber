@@ -38,10 +38,51 @@ export default function TvAgenda() {
   const [mediaIdx, setMediaIdx] = useState(0);
   const [now, setNow] = useState(new Date());
   const timerRef = useRef<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [cursorHidden, setCursorHidden] = useState(false);
+  const idleRef = useRef<number | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
+  }, []);
+
+  // Fullscreen tracking
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    } catch {}
+  };
+
+  // Hide cursor after 3s idle
+  useEffect(() => {
+    const onMove = () => {
+      setCursorHidden(false);
+      if (idleRef.current) window.clearTimeout(idleRef.current);
+      idleRef.current = window.setTimeout(() => setCursorHidden(true), 3000);
+    };
+    onMove();
+    window.addEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      if (idleRef.current) window.clearTimeout(idleRef.current);
+    };
+  }, []);
+
+  // Auto-refresh full page daily at 3am to keep session healthy
+  useEffect(() => {
+    const check = setInterval(() => {
+      const d = new Date();
+      if (d.getHours() === 3 && d.getMinutes() === 0) window.location.reload();
+    }, 60_000);
+    return () => clearInterval(check);
   }, []);
 
   useEffect(() => {
