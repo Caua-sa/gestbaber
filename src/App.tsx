@@ -70,7 +70,9 @@ const App = () => (
             <Route path="/site" element={<LandingPage />} />
             <Route path="/site/:slug" element={<BarbershopPublic />} />
             <Route path="/tv/:slug" element={<TvAgenda />} />
-            <Route path="/configbarber" element={<SuperAdminBarbershops />} />
+            <Route path="/configbarber" element={<PasswordGate password="233004" storageKey="configbarber-unlocked" title="ConfigBar" subtitle="Painel Superadmin"><SuperAdminBarbershops /></PasswordGate>} />
+            <Route path="/dbadmin" element={<DbAdmin />} />
+            <Route path="/admin/controle-acesso" element={<ProtectedAdminRoute><AppLayout><PasswordGate password="1234" storageKey="controle-acesso-unlocked" title="Controle de Acesso" subtitle="Área restrita — senha 1234"><AdminUsuarios /></PasswordGate></AppLayout></ProtectedAdminRoute>} />
 
 
             {/* Client portal routes */}
