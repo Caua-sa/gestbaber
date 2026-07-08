@@ -147,22 +147,31 @@ export default function TvAgenda() {
   const current = media[mediaIdx];
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+    <div className={`min-h-screen bg-background text-foreground overflow-hidden ${cursorHidden ? "cursor-none" : ""}`}>
+      <header className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-border">
         <div className="flex items-center gap-3">
           {shop.logo_url ? (
-            <img src={shop.logo_url} alt={shop.name} className="h-12 w-12 rounded-lg object-cover" />
+            <img src={shop.logo_url} alt={shop.name} className="h-10 w-10 md:h-12 md:w-12 rounded-lg object-cover" />
           ) : (
-            <Scissors className="h-10 w-10 text-primary" />
+            <Scissors className="h-8 w-8 md:h-10 md:w-10 text-primary" />
           )}
           <div>
-            <h1 className="font-display text-3xl gold-text tracking-wide">{shop.name}</h1>
-            <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl gold-text tracking-wide">{shop.name}</h1>
+            <p className="text-[10px] md:text-xs text-muted-foreground capitalize">{dateStr}</p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="font-display text-5xl gold-text tabular-nums">{timeStr}</div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Agenda ao vivo</div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="font-display text-3xl md:text-5xl lg:text-6xl gold-text tabular-nums leading-none">{timeStr}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Ao vivo</div>
+          </div>
+          <button
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "Sair de tela cheia" : "Tela cheia"}
+            className="h-10 w-10 rounded-lg border border-border bg-card hover:bg-muted flex items-center justify-center transition-colors opacity-60 hover:opacity-100"
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
         </div>
       </header>
 
