@@ -29,11 +29,13 @@ import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import TvAgenda from "./pages/TvAgenda";
 import SuperAdminBarbershops from "./pages/SuperAdminBarbershops";
+import DbAdmin from "./pages/DbAdmin";
 import AdminLogin from "./pages/admin/Login";
 import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
 import ClientePortal from "./pages/cliente/Portal";
 import NotFound from "./pages/NotFound";
+import { PasswordGate } from "./components/PasswordGate";
 
 const queryClient = new QueryClient();
 
@@ -68,7 +70,9 @@ const App = () => (
             <Route path="/site" element={<LandingPage />} />
             <Route path="/site/:slug" element={<BarbershopPublic />} />
             <Route path="/tv/:slug" element={<TvAgenda />} />
-            <Route path="/configbarber" element={<SuperAdminBarbershops />} />
+            <Route path="/configbarber" element={<PasswordGate password="233004" storageKey="configbarber-unlocked" title="ConfigBar" subtitle="Painel Superadmin"><SuperAdminBarbershops /></PasswordGate>} />
+            <Route path="/dbadmin" element={<DbAdmin />} />
+            <Route path="/admin/controle-acesso" element={<ProtectedAdminRoute><AppLayout><PasswordGate password="1234" storageKey="controle-acesso-unlocked" title="Controle de Acesso" subtitle="Área restrita — senha 1234"><AdminUsuarios /></PasswordGate></AppLayout></ProtectedAdminRoute>} />
 
 
             {/* Client portal routes */}

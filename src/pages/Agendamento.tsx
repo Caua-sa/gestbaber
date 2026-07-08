@@ -272,7 +272,12 @@ export default function Agendamento() {
   };
 
   const shiftDay = (delta: number) => { const d = new Date(selectedDate); d.setDate(d.getDate() + delta); setSelectedDate(d); };
-  const occupiedTimes = new Set(appointments.map(a => a.appointment_time?.slice(0, 5)));
+  // Ocupado é POR BARBEIRO — cada barbeiro tem sua própria agenda
+  const occupiedTimes = new Set(
+    appointments
+      .filter(a => a.status !== "cancelado" && (!form.barber_id || (a as any).barber_id === form.barber_id))
+      .map(a => a.appointment_time?.slice(0, 5))
+  );
   const weekStrip = useMemo(() => {
     const today = new Date(); today.setHours(0,0,0,0);
     return Array.from({ length: 7 }).map((_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return d; });
