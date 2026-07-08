@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Scissors } from "lucide-react";
+import { ExternalLink, Scissors, Maximize2, Minimize2 } from "lucide-react";
 
 interface Barbershop { id: string; name: string; slug: string; logo_url: string | null; owner_id: string; active: boolean; banned: boolean; }
 interface Barber { id: string; name: string; photo_url: string | null; }
