@@ -26,6 +26,7 @@ const menuItems = [
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Insumos", url: "/admin/insumos", icon: Boxes },
   { title: "Vendas", url: "/vendas", icon: ShoppingCart },
+  { title: "Controle de Acesso", url: "/admin/controle-acesso", icon: ShieldCheck },
 ];
 
 const siteItems = [
