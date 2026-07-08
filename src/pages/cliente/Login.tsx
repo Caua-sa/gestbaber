@@ -171,13 +171,17 @@ export default function ClienteLogin() {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-6">
-          <Tabs defaultValue="whatsapp" className="w-full">
+          <Tabs defaultValue="email" className="w-full">
             <TabsList className="grid grid-cols-2 w-full mb-4">
-              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
               <TabsTrigger value="email">E-mail</TabsTrigger>
+              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             </TabsList>
 
             <TabsContent value="whatsapp" className="space-y-4">
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+                O login por WhatsApp só funciona se a barbearia tiver a integração ativa (Meta Cloud ou QR).
+                Se não chegar código, use a aba <strong>E-mail</strong> — funciona imediatamente.
+              </div>
               {!otpSent ? (
                 <>
                   <div className="relative">
