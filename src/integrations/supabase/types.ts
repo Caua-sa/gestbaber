@@ -1007,6 +1007,20 @@ export type Database = {
           barbershop_id: string | null
           status: string | null
         }
+        Insert: {
+          appointment_date?: string | null
+          appointment_time?: string | null
+          barber_id?: string | null
+          barbershop_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          appointment_date?: string | null
+          appointment_time?: string | null
+          barber_id?: string | null
+          barbershop_id?: string | null
+          status?: string | null
+        }
         Relationships: []
       }
     }
