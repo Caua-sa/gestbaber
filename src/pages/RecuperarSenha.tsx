@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Scissors, Mail, KeyRound, Lock, ArrowLeft } from "lucide-react";
@@ -19,6 +19,40 @@ export default function RecuperarSenha() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Suporte ao link de recuperação enviado por e-mail
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setStep("password");
+    });
+
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const tokenHash = params.get("token_hash") || hash.get("token_hash");
+      const type = params.get("type") || hash.get("type");
+
+      if (tokenHash && type === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+        if (!error) {
+          setStep("password");
+          window.history.replaceState({}, "", "/recuperar-senha");
+          return;
+        }
+      }
+
+      if (type === "recovery" || hash.get("access_token")) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setStep("password");
+          window.history.replaceState({}, "", "/recuperar-senha");
+        }
+      }
+    })();
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
 
   const sendCode = async (e: React.FormEvent) => {
     e.preventDefault();
