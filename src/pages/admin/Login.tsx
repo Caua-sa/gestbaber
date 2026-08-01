@@ -74,6 +74,11 @@ export default function AdminLogin() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Aguarde..." : "Entrar"}
             </Button>
+            <div className="text-center">
+              <Link to="/recuperar-senha" className="text-sm text-muted-foreground hover:text-primary">
+                Esqueceu a senha?
+              </Link>
+            </div>
           </form>
 
           <div className="mt-6 pt-6 border-t border-border text-center">
