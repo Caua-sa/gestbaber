@@ -93,7 +93,7 @@ export default function TvAgenda() {
       setShop(s as any);
       const [{ data: bs }, { data: ap }, { data: md }] = await Promise.all([
         supabase.from("barbers").select("id,name,photo_url").eq("barbershop_id", s.id).eq("active", true).order("name"),
-        supabase.from("appointments").select("barber_id,appointment_time,status").eq("barbershop_id", s.id).eq("appointment_date", new Date().toISOString().slice(0, 10)),
+        supabase.from("tv_agenda_slots").select("barber_id,appointment_time,status").eq("barbershop_id", s.id).eq("appointment_date", new Date().toISOString().slice(0, 10)),
         supabase.from("marketing_media").select("*").eq("owner_id", (s as any).owner_id).eq("active", true).order("sort_order"),
       ]);
       setBarbers((bs || []) as any);
@@ -109,7 +109,7 @@ export default function TvAgenda() {
       "postgres_changes",
       { event: "*", schema: "public", table: "appointments", filter: `barbershop_id=eq.${shop.id}` },
       async () => {
-        const { data: ap } = await supabase.from("appointments").select("barber_id,appointment_time,status").eq("barbershop_id", shop.id).eq("appointment_date", new Date().toISOString().slice(0, 10));
+        const { data: ap } = await supabase.from("tv_agenda_slots").select("barber_id,appointment_time,status").eq("barbershop_id", shop.id).eq("appointment_date", new Date().toISOString().slice(0, 10));
         setAppts((ap || []) as any);
       }
     ).subscribe();
