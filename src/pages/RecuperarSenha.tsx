@@ -159,6 +159,9 @@ export default function RecuperarSenha() {
                 <KeyRound className="h-4 w-4 mr-2" />
                 {loading ? "Verificando..." : "Validar código"}
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Se o e-mail trouxer apenas um link, clique nele: você voltará para esta página já pronto para criar a nova senha.
+              </p>
               <Button type="button" variant="ghost" className="w-full" onClick={() => setStep("email")}>
                 Reenviar / alterar e-mail
               </Button>
