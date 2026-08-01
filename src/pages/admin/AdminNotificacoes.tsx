@@ -1,4 +1,6 @@
-import { useNotifications } from "@/hooks/useNotifications";
+import { useState } from "react";
+import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
+import { NotificationLetter } from "@/components/NotificationLetter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCheck, Info, AlertTriangle, Megaphone, Loader2 } from "lucide-react";
@@ -12,6 +14,12 @@ const levelMeta: Record<string, { icon: typeof Info; label: string; cls: string 
 
 export default function AdminNotificacoes() {
   const { items, loading, unread, markRead, markAllRead } = useNotifications();
+  const [openLetter, setOpenLetter] = useState<AppNotification | null>(null);
+
+  const openNotification = (n: AppNotification) => {
+    setOpenLetter(n);
+    if (!n.read) markRead(n.id);
+  };
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -48,7 +56,8 @@ export default function AdminNotificacoes() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className={`bg-card border rounded-xl p-4 flex gap-3 ${n.read ? "border-border opacity-70" : "border-primary/40"}`}
+                onClick={() => openNotification(n)}
+                className={`bg-card border rounded-xl p-4 flex gap-3 cursor-pointer hover:border-primary/60 hover:shadow-md transition-all ${n.read ? "border-border opacity-70" : "border-primary/40"}`}
               >
                 <div className={`h-9 w-9 rounded-lg flex items-center justify-center border shrink-0 ${meta.cls}`}>
                   <Icon className="h-4 w-4" />
@@ -62,14 +71,19 @@ export default function AdminNotificacoes() {
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{n.body}</p>
                   <p className="text-[11px] text-muted-foreground">{new Date(n.created_at).toLocaleString("pt-BR")}</p>
                 </div>
-                {!n.read && (
-                  <Button size="sm" variant="ghost" onClick={() => markRead(n.id)}>Marcar lida</Button>
-                )}
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openNotification(n); }}>Abrir</Button>
               </motion.div>
             );
           })}
         </div>
       )}
+
+      <NotificationLetter
+        notification={openLetter}
+        open={!!openLetter}
+        onOpenChange={(v) => !v && setOpenLetter(null)}
+        onMarkRead={markRead}
+      />
     </div>
   );
 }

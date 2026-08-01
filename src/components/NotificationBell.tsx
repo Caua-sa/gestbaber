@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
+import { NotificationLetter } from "@/components/NotificationLetter";
 
 export function NotificationBell() {
   const { items, unread, markRead } = useNotifications();
   const navigate = useNavigate();
   const latest = items.slice(0, 5);
+  const [openLetter, setOpenLetter] = useState<AppNotification | null>(null);
 
   return (
+    <>
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground" aria-label="Notificações">
@@ -31,7 +35,7 @@ export function NotificationBell() {
           {latest.map((n) => (
             <button
               key={n.id}
-              onClick={() => { markRead(n.id); navigate("/admin/notificacoes"); }}
+              onClick={() => { setOpenLetter(n); if (!n.read) markRead(n.id); }}
               className="w-full text-left p-3 hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-2">
@@ -50,5 +54,12 @@ export function NotificationBell() {
         </div>
       </PopoverContent>
     </Popover>
+    <NotificationLetter
+      notification={openLetter}
+      open={!!openLetter}
+      onOpenChange={(v) => !v && setOpenLetter(null)}
+      onMarkRead={markRead}
+    />
+    </>
   );
 }
