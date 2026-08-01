@@ -999,7 +999,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      tv_agenda_slots: {
+        Row: {
+          appointment_date: string | null
+          appointment_time: string | null
+          barber_id: string | null
+          barbershop_id: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_account_owner: { Args: { _user_id: string }; Returns: string }
