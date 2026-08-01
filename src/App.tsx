@@ -34,6 +34,7 @@ import DbAdmin from "./pages/DbAdmin";
 import AdminLogin from "./pages/admin/Login";
 import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
+import RecuperarSenha from "./pages/RecuperarSenha";
 import ClientePortal from "./pages/cliente/Portal";
 import NotFound from "./pages/NotFound";
 import { PasswordGate } from "./components/PasswordGate";
@@ -82,6 +83,7 @@ const App = () => (
 
             {/* Admin login */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/recuperar-senha" element={<RecuperarSenha />} />
             <Route path="/admin/signup" element={<AdminSignup />} />
 
             {/* Protected admin routes */}

@@ -258,6 +258,11 @@ export default function ClienteLogin() {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Aguarde..." : mode === "signup" ? "Criar Conta" : "Entrar"}
                 </Button>
+                <div className="text-center">
+                  <a href="/recuperar-senha" className="text-sm text-muted-foreground hover:text-primary">
+                    Esqueceu a senha?
+                  </a>
+                </div>
                 <p className="text-center text-sm text-muted-foreground">
                   {mode === "signup" ? "Já tem conta?" : "Não tem conta?"}{" "}
                   <button type="button" onClick={() => setMode(mode === "signup" ? "login" : "signup")} className="text-primary hover:underline">
