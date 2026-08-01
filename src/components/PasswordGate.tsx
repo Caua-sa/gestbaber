@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -45,9 +46,9 @@ export function PasswordGate({ password, storageKey, title = "Área restrita", s
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
-        <Input
+        <PasswordInput
           autoFocus
-          type="password"
+          
           placeholder="Senha"
           value={pw}
           onChange={(e) => { setPw(e.target.value); setErr(""); }}
