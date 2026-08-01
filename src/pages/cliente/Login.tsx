@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Scissors, Mail, Lock, User, Phone, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -252,7 +253,7 @@ export default function ClienteLogin() {
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 bg-secondary border-border" />
+                  <PasswordInput  placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="pl-10 bg-secondary border-border" />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Aguarde..." : mode === "signup" ? "Criar Conta" : "Entrar"}

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Scissors, Mail, Lock, User, Store, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -88,8 +89,8 @@ export default function AdminSignup() {
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="password"
+              <PasswordInput
+                
                 placeholder="Senha (mín. 6 caracteres)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
