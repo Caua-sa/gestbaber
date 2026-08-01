@@ -27,6 +27,7 @@ import AdminInsumos from "./pages/admin/AdminInsumos";
 import AdminClientes from "./pages/admin/AdminClientes";
 import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
 import AdminMarketing from "./pages/admin/AdminMarketing";
+import AdminNotificacoes from "./pages/admin/AdminNotificacoes";
 import TvAgenda from "./pages/TvAgenda";
 import SuperAdminBarbershops from "./pages/SuperAdminBarbershops";
 import DbAdmin from "./pages/DbAdmin";
@@ -103,6 +104,7 @@ const App = () => (
             <Route path="/admin/clientes" element={<ProtectedAdminRoute><AppLayout><AdminClientes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AppLayout><AdminWhatsApp /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/marketing" element={<ProtectedAdminRoute><AppLayout><AdminMarketing /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/notificacoes" element={<ProtectedAdminRoute><AppLayout><AdminNotificacoes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

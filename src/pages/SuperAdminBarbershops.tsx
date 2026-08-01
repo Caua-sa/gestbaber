@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Ban, CheckCircle2, Trash2, KeyRound, Mail, Search, Crown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { NotificationBroadcast } from "@/components/superadmin/NotificationBroadcast";
 
 interface Shop {
   id: string; name: string; slug: string; owner_id: string;
@@ -116,6 +117,8 @@ export default function SuperAdminBarbershops() {
         </div>
       </header>
 
+      <NotificationBroadcast shops={shops} userId={user.id} />
+
       <div className="bg-card border border-border rounded-xl p-4 space-y-3">
         <p className="font-display text-lg">Promover novo superadmin</p>
         <div className="flex gap-2">
@@ -124,6 +127,7 @@ export default function SuperAdminBarbershops() {
         </div>
         <p className="text-xs text-muted-foreground">O usuário já deve ter cadastro em /admin/signup.</p>
       </div>
+
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="p-4 border-b border-border flex items-center gap-2">
