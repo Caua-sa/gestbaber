@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Ban, CheckCircle2, Trash2, KeyRound, Mail, Search, Crown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { NotificationBroadcast } from "@/components/superadmin/NotificationBroadcast";
 
 interface Shop {
   id: string; name: string; slug: string; owner_id: string;
