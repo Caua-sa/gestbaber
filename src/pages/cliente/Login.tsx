@@ -31,11 +31,13 @@ export default function ClienteLogin() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
-  // Onboarding (after WhatsApp login if profile incomplete)
+  // Onboarding (after WhatsApp code: complete registration)
   const [onboarding, setOnboarding] = useState(false);
   const [obName, setObName] = useState("");
   const [obEmail, setObEmail] = useState("");
   const [obBirthday, setObBirthday] = useState("");
+  const [obPassword, setObPassword] = useState("");
+  const [obPhone, setObPhone] = useState("");
 
   const navigate = useNavigate();
   const [params] = useSearchParams();
