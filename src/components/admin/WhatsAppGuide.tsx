@@ -25,27 +25,56 @@ export default function WhatsAppGuide() {
       <div className="bg-card border border-border rounded-xl p-5 space-y-2">
         <h2 className="font-display text-2xl flex items-center gap-2"><BookOpen className="h-6 w-6 text-primary" /> Manual de Instalação (WhatsApp via QR)</h2>
         <p className="text-sm text-muted-foreground">
-          Passo a passo objetivo para conectar seu WhatsApp ao Barber Pro sem burocracia. O Lovable Cloud <b>não roda</b> processos 24/7, por isso o servidor precisa ficar em outro lugar (Railway, Render, VPS).
+          Conectar por QR Code usa o WhatsApp Web — <b>não paga nada de API da Meta</b>. O único "custo" seria hospedar o servidorzinho, mas abaixo mostramos o <b>modo 100% grátis</b> (seu próprio computador + Cloudflare Tunnel gratuito).
         </p>
       </div>
 
+      {/* Modo grátis */}
+      <section className="bg-card border-2 border-emerald-500/40 rounded-xl p-5 space-y-3">
+        <h3 className="font-display text-lg flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-400" /> Modo 100% grátis (recomendado)</h3>
+        <p className="text-sm text-muted-foreground">
+          Você roda o servidor no <b>computador da barbearia</b> (aquele que já fica ligado) e expõe ele na internet com o <b>Cloudflare Tunnel</b>, que é gratuito e não precisa de cartão. Total: <b>R$ 0</b>.
+        </p>
+        <ol className="list-decimal ml-5 space-y-2 text-sm">
+          <li>Instale o <b>Node.js 18+</b> (<a href="https://nodejs.org" target="_blank" rel="noreferrer" className="text-primary underline">nodejs.org</a>) no computador da barbearia.</li>
+          <li>Baixe a pasta <code>baileys-server/</code> deste projeto, abra o terminal nela e rode:
+            <Code>{`npm install
+SHARED_TOKEN=uma_senha_longa_aleatoria node server.js`}</Code>
+            No Windows (Prompt de Comando):
+            <Code>{`npm install
+set SHARED_TOKEN=uma_senha_longa_aleatoria
+node server.js`}</Code>
+            Pronto, o servidor já está rodando em <code>http://localhost:3000</code>.
+          </li>
+          <li>Baixe o <b>cloudflared</b> grátis em <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/" target="_blank" rel="noreferrer" className="text-primary underline">cloudflare.com</a> e rode:
+            <Code>{`cloudflared tunnel --url http://localhost:3000`}</Code>
+          </li>
+          <li>Ele mostra uma URL tipo <code>https://alguma-coisa.trycloudflare.com</code>. <b>Copie essa URL</b> — é ela que você cola no Barber Pro (Passo 2).</li>
+          <li>Deixe as duas janelas abertas (servidor + túnel). Se o PC desligar, é só abrir os dois de novo — o WhatsApp continua conectado, só o QR que não precisa escanear de novo.</li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          ⚠️ A URL gratuita do túnel muda quando você reinicia o cloudflared — basta colar a nova URL no Passo 2. Quer URL fixa grátis pra sempre? Crie uma conta grátis na Cloudflare e use um "named tunnel".
+        </p>
+      </section>
+
+      {/* Alternativa paga */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-3">
+        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> Alternativa: servidor na nuvem (24/7 sem PC ligado)</h3>
+        <p className="text-sm text-muted-foreground">
+          Se não quiser deixar um computador ligado, suba o mesmo <code>baileys-server/</code> no <b>Railway</b> (~US$ 5/mês) ou numa VPS <b>Oracle Cloud Always Free</b> (grátis pra sempre, porém mais técnico). O restante do passo a passo é igual — só muda a URL.
+        </p>
+      </section>
+
       {/* Passo 1 */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> 1. Suba o servidor Baileys</h3>
-        <p className="text-sm text-muted-foreground">Opção mais fácil: Railway (US$ 5/mês, sobra pro mês todo).</p>
-        <ol className="list-decimal ml-5 space-y-2 text-sm">
-          <li>Crie conta em <a href="https://railway.app" target="_blank" rel="noreferrer" className="text-primary underline">railway.app</a>.</li>
-          <li>Faça <b>fork</b> ou baixe a pasta <code>baileys-server/</code> deste projeto e suba pra um repositório no GitHub.</li>
-          <li>No Railway: <b>New Project → Deploy from GitHub</b>, escolha o repo, aponte a pasta raiz para <code>baileys-server</code>.</li>
-          <li>Em <b>Settings → Networking → Generate Domain</b> para gerar uma URL pública HTTPS.</li>
-          <li>Em <b>Variables</b> adicione:
-            <Code>{`SHARED_TOKEN=uma_senha_longa_aleatoria_aqui
+        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> 1. Variáveis do servidor</h3>
+        <p className="text-sm text-muted-foreground">
+          Se escolher o <b>modo grátis</b> acima, só precisa do <code>SHARED_TOKEN</code> (o túnel cuida da URL). Se subir na nuvem (Railway/VPS), configure também o webhook:
+        </p>
+        <Code>{`SHARED_TOKEN=uma_senha_longa_aleatoria_aqui
 WEBHOOK_URL=${webhook}
 WEBHOOK_OWNER_ID=SEU_USER_ID_DO_BARBER_PRO`}</Code>
-            <p className="text-xs text-muted-foreground">Seu <code>user_id</code> aparece em <b>Admin → Controle de Acessos</b>, ou peça pra alguém que já tem acesso.</p>
-          </li>
-          <li>Deploy → copie a URL pública gerada (ex: <code>https://barber-baileys.up.railway.app</code>).</li>
-        </ol>
+        <p className="text-xs text-muted-foreground">Seu <code>user_id</code> aparece em <b>Admin → Controle de Acessos</b>, ou peça pra alguém que já tem acesso. No Railway: <b>New Project → Deploy from GitHub</b> com a pasta <code>baileys-server</code>, depois <b>Settings → Networking → Generate Domain</b>.</p>
       </section>
 
       {/* Passo 2 */}

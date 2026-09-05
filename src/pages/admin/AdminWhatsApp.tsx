@@ -51,7 +51,7 @@ const defaultBot: Bot = {
 export default function AdminWhatsApp() {
   const { ownerId, isOwner } = useAccountOwner();
   const [form, setForm] = useState({
-    mode: "cloud" as "cloud" | "baileys",
+    mode: "baileys" as "cloud" | "baileys",
     phone_number_id: "",
     access_token: "",
     business_account_id: "",
