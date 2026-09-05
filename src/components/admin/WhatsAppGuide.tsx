@@ -25,9 +25,45 @@ export default function WhatsAppGuide() {
       <div className="bg-card border border-border rounded-xl p-5 space-y-2">
         <h2 className="font-display text-2xl flex items-center gap-2"><BookOpen className="h-6 w-6 text-primary" /> Manual de Instalação (WhatsApp via QR)</h2>
         <p className="text-sm text-muted-foreground">
-          Passo a passo objetivo para conectar seu WhatsApp ao Barber Pro sem burocracia. O Lovable Cloud <b>não roda</b> processos 24/7, por isso o servidor precisa ficar em outro lugar (Railway, Render, VPS).
+          Conectar por QR Code usa o WhatsApp Web — <b>não paga nada de API da Meta</b>. O único "custo" seria hospedar o servidorzinho, mas abaixo mostramos o <b>modo 100% grátis</b> (seu próprio computador + Cloudflare Tunnel gratuito).
         </p>
       </div>
+
+      {/* Modo grátis */}
+      <section className="bg-card border-2 border-emerald-500/40 rounded-xl p-5 space-y-3">
+        <h3 className="font-display text-lg flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-400" /> Modo 100% grátis (recomendado)</h3>
+        <p className="text-sm text-muted-foreground">
+          Você roda o servidor no <b>computador da barbearia</b> (aquele que já fica ligado) e expõe ele na internet com o <b>Cloudflare Tunnel</b>, que é gratuito e não precisa de cartão. Total: <b>R$ 0</b>.
+        </p>
+        <ol className="list-decimal ml-5 space-y-2 text-sm">
+          <li>Instale o <b>Node.js 18+</b> (<a href="https://nodejs.org" target="_blank" rel="noreferrer" className="text-primary underline">nodejs.org</a>) no computador da barbearia.</li>
+          <li>Baixe a pasta <code>baileys-server/</code> deste projeto, abra o terminal nela e rode:
+            <Code>{`npm install
+SHARED_TOKEN=uma_senha_longa_aleatoria node server.js`}</Code>
+            No Windows (Prompt de Comando):
+            <Code>{`npm install
+set SHARED_TOKEN=uma_senha_longa_aleatoria
+node server.js`}</Code>
+            Pronto, o servidor já está rodando em <code>http://localhost:3000</code>.
+          </li>
+          <li>Baixe o <b>cloudflared</b> grátis em <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/" target="_blank" rel="noreferrer" className="text-primary underline">cloudflare.com</a> e rode:
+            <Code>{`cloudflared tunnel --url http://localhost:3000`}</Code>
+          </li>
+          <li>Ele mostra uma URL tipo <code>https://alguma-coisa.trycloudflare.com</code>. <b>Copie essa URL</b> — é ela que você cola no Barber Pro (Passo 2).</li>
+          <li>Deixe as duas janelas abertas (servidor + túnel). Se o PC desligar, é só abrir os dois de novo — o WhatsApp continua conectado, só o QR que não precisa escanear de novo.</li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          ⚠️ A URL gratuita do túnel muda quando você reinicia o cloudflared — basta colar a nova URL no Passo 2. Quer URL fixa grátis pra sempre? Crie uma conta grátis na Cloudflare e use um "named tunnel".
+        </p>
+      </section>
+
+      {/* Alternativa paga */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-3">
+        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> Alternativa: servidor na nuvem (24/7 sem PC ligado)</h3>
+        <p className="text-sm text-muted-foreground">
+          Se não quiser deixar um computador ligado, suba o mesmo <code>baileys-server/</code> no <b>Railway</b> (~US$ 5/mês) ou numa VPS <b>Oracle Cloud Always Free</b> (grátis pra sempre, porém mais técnico). O restante do passo a passo é igual — só muda a URL.
+        </p>
+      </section>
 
       {/* Passo 1 */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-3">
