@@ -49,14 +49,16 @@ export default function ClienteLogin() {
     (async () => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, birthday")
+        .select("full_name, email, birthday, phone")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!profile || !profile.full_name || !profile.email) {
+      const isSynthetic = (user.email || "").endsWith("@barberpro.local");
+      if (!profile || !profile.full_name || !profile.email || isSynthetic) {
         setOnboarding(true);
         setObName(profile?.full_name || "");
-        setObEmail(profile?.email || user.email || "");
+        setObEmail(isSynthetic ? "" : (profile?.email || user.email || ""));
         setObBirthday(profile?.birthday || "");
+        setObPhone(profile?.phone || phone || "");
       } else {
         navigate(redirect);
       }
