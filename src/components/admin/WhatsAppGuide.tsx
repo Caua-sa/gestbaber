@@ -67,21 +67,14 @@ node server.js`}</Code>
 
       {/* Passo 1 */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> 1. Suba o servidor Baileys</h3>
-        <p className="text-sm text-muted-foreground">Opção mais fácil: Railway (US$ 5/mês, sobra pro mês todo).</p>
-        <ol className="list-decimal ml-5 space-y-2 text-sm">
-          <li>Crie conta em <a href="https://railway.app" target="_blank" rel="noreferrer" className="text-primary underline">railway.app</a>.</li>
-          <li>Faça <b>fork</b> ou baixe a pasta <code>baileys-server/</code> deste projeto e suba pra um repositório no GitHub.</li>
-          <li>No Railway: <b>New Project → Deploy from GitHub</b>, escolha o repo, aponte a pasta raiz para <code>baileys-server</code>.</li>
-          <li>Em <b>Settings → Networking → Generate Domain</b> para gerar uma URL pública HTTPS.</li>
-          <li>Em <b>Variables</b> adicione:
-            <Code>{`SHARED_TOKEN=uma_senha_longa_aleatoria_aqui
+        <h3 className="font-display text-lg flex items-center gap-2"><Server className="h-5 w-5 text-primary" /> 1. Variáveis do servidor</h3>
+        <p className="text-sm text-muted-foreground">
+          Se escolher o <b>modo grátis</b> acima, só precisa do <code>SHARED_TOKEN</code> (o túnel cuida da URL). Se subir na nuvem (Railway/VPS), configure também o webhook:
+        </p>
+        <Code>{`SHARED_TOKEN=uma_senha_longa_aleatoria_aqui
 WEBHOOK_URL=${webhook}
 WEBHOOK_OWNER_ID=SEU_USER_ID_DO_BARBER_PRO`}</Code>
-            <p className="text-xs text-muted-foreground">Seu <code>user_id</code> aparece em <b>Admin → Controle de Acessos</b>, ou peça pra alguém que já tem acesso.</p>
-          </li>
-          <li>Deploy → copie a URL pública gerada (ex: <code>https://barber-baileys.up.railway.app</code>).</li>
-        </ol>
+        <p className="text-xs text-muted-foreground">Seu <code>user_id</code> aparece em <b>Admin → Controle de Acessos</b>, ou peça pra alguém que já tem acesso. No Railway: <b>New Project → Deploy from GitHub</b> com a pasta <code>baileys-server</code>, depois <b>Settings → Networking → Generate Domain</b>.</p>
       </section>
 
       {/* Passo 2 */}
