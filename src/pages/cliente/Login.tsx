@@ -169,17 +169,31 @@ export default function ClienteLogin() {
           <div className="text-center mb-8">
             <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />
             <h1 className="text-4xl font-display gold-text">BEM-VINDO</h1>
-            <p className="text-muted-foreground text-sm mt-1">Complete seu cadastro</p>
+            <p className="text-muted-foreground text-sm mt-1">Código confirmado! Complete seu cadastro</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-            <Input placeholder="Nome completo" value={obName} onChange={(e) => setObName(e.target.value)} />
-            <Input type="email" placeholder="E-mail" value={obEmail} onChange={(e) => setObEmail(e.target.value)} />
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Nome completo" value={obName} onChange={(e) => setObName(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="WhatsApp (com DDD)" value={obPhone} onChange={(e) => setObPhone(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input type="email" placeholder="E-mail" value={obEmail} onChange={(e) => setObEmail(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <PasswordInput placeholder="Crie uma senha (mín. 6 caracteres)" value={obPassword} onChange={(e) => setObPassword(e.target.value)} minLength={6} className="pl-10 bg-secondary border-border" />
+            </div>
             <div>
               <label className="text-xs text-muted-foreground">Data de nascimento (ganhe 10% no seu aniversário 🎂)</label>
               <Input type="date" value={obBirthday} onChange={(e) => setObBirthday(e.target.value)} />
             </div>
             <Button onClick={completeOnboarding} disabled={loading} className="w-full gold-gradient text-primary-foreground">
-              {loading ? "Salvando..." : "Continuar"}
+              {loading ? "Salvando..." : "Concluir cadastro"}
             </Button>
           </div>
         </motion.div>
