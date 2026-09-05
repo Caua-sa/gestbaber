@@ -1,8 +1,16 @@
 # Servidor Baileys — Barber Pro
 
-Servidor Node.js que conecta o WhatsApp Web (via QR Code) ao Barber Pro. Precisa rodar **24/7** em um servidor externo — o Lovable Cloud não roda processos persistentes.
+Servidor Node.js que conecta o WhatsApp Web (via QR Code) ao Barber Pro. **Custo de API: R$ 0** — não usa a API paga da Meta. Só precisa de um lugar pra rodar 24/7 (o Lovable Cloud não roda processos persistentes).
 
-## Deploy rápido no Railway (recomendado)
+## Modo 100% grátis: PC da barbearia + Cloudflare Tunnel
+
+1. Instale o [Node.js 18+](https://nodejs.org) no computador que já fica ligado na barbearia.
+2. Nesta pasta, rode: `npm install` e depois `node server.js` com a variável `SHARED_TOKEN` (ex.: `set SHARED_TOKEN=senha_longa` no Windows, ou `SHARED_TOKEN=senha_longa node server.js` no Mac/Linux).
+3. Baixe o [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (grátis) e rode: `cloudflared tunnel --url http://localhost:3000`.
+4. Copie a URL `https://....trycloudflare.com` gerada e cole no painel **Admin > WhatsApp > Conectar via QR**, junto com o mesmo `SHARED_TOKEN`.
+5. Deixe as duas janelas abertas. A URL muda a cada reinício do cloudflared — para URL fixa grátis, crie conta gratuita na Cloudflare e use um *named tunnel*.
+
+## Deploy na nuvem (24/7 sem PC ligado) — Railway
 
 1. Crie uma conta em https://railway.app (US$ 5/mês)
 2. **New Project → Deploy from GitHub repo** e aponte pra este diretório (`baileys-server/`)
