@@ -31,11 +31,13 @@ export default function ClienteLogin() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
 
-  // Onboarding (after WhatsApp login if profile incomplete)
+  // Onboarding (after WhatsApp code: complete registration)
   const [onboarding, setOnboarding] = useState(false);
   const [obName, setObName] = useState("");
   const [obEmail, setObEmail] = useState("");
   const [obBirthday, setObBirthday] = useState("");
+  const [obPassword, setObPassword] = useState("");
+  const [obPhone, setObPhone] = useState("");
 
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -47,14 +49,16 @@ export default function ClienteLogin() {
     (async () => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, birthday")
+        .select("full_name, email, birthday, phone")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (!profile || !profile.full_name || !profile.email) {
+      const isSynthetic = (user.email || "").endsWith("@barberpro.local");
+      if (!profile || !profile.full_name || !profile.email || isSynthetic) {
         setOnboarding(true);
         setObName(profile?.full_name || "");
-        setObEmail(profile?.email || user.email || "");
+        setObEmail(isSynthetic ? "" : (profile?.email || user.email || ""));
         setObBirthday(profile?.birthday || "");
+        setObPhone(profile?.phone || phone || "");
       } else {
         navigate(redirect);
       }
@@ -121,19 +125,40 @@ export default function ClienteLogin() {
 
   const completeOnboarding = async () => {
     if (!user) return;
-    if (!obName.trim() || !obEmail.trim()) { toast.error("Nome e e-mail são obrigatórios"); return; }
+    if (!obName.trim()) { toast.error("Informe seu nome"); return; }
+    if (!obEmail.trim()) { toast.error("Informe seu e-mail"); return; }
+    if (obPassword.length < 6) { toast.error("A senha precisa de ao menos 6 caracteres"); return; }
     setLoading(true);
-    const { error } = await supabase.from("profiles").upsert({
-      user_id: user.id,
-      full_name: obName.trim(),
-      email: obEmail.trim(),
-      phone: user.phone || phone || null,
-      birthday: obBirthday || null,
-    }, { onConflict: "user_id" });
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Cadastro completo!");
-    navigate(redirect);
+    try {
+      const digits = obPhone.replace(/\D/g, "");
+      // Set real email + password on the account created via WhatsApp code
+      const { error: updErr } = await supabase.auth.updateUser({
+        email: obEmail.trim(),
+        password: obPassword,
+      });
+      if (updErr) {
+        // If email change fails (e.g. already in use), still save the password
+        const { error: pwErr } = await supabase.auth.updateUser({ password: obPassword });
+        if (pwErr) throw updErr;
+        toast.info("Senha definida. O e-mail informado já está em uso; usamos seu WhatsApp como login.");
+      } else {
+        toast.info("Enviamos um e-mail de confirmação para validar seu endereço.");
+      }
+      const { error } = await supabase.from("profiles").upsert({
+        user_id: user.id,
+        full_name: obName.trim(),
+        email: obEmail.trim(),
+        phone: digits || user.phone || null,
+        birthday: obBirthday || null,
+      }, { onConflict: "user_id" });
+      if (error) throw error;
+      toast.success("Cadastro completo!");
+      navigate(redirect);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar cadastro");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Onboarding screen
@@ -144,17 +169,31 @@ export default function ClienteLogin() {
           <div className="text-center mb-8">
             <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />
             <h1 className="text-4xl font-display gold-text">BEM-VINDO</h1>
-            <p className="text-muted-foreground text-sm mt-1">Complete seu cadastro</p>
+            <p className="text-muted-foreground text-sm mt-1">Código confirmado! Complete seu cadastro</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-            <Input placeholder="Nome completo" value={obName} onChange={(e) => setObName(e.target.value)} />
-            <Input type="email" placeholder="E-mail" value={obEmail} onChange={(e) => setObEmail(e.target.value)} />
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Nome completo" value={obName} onChange={(e) => setObName(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="WhatsApp (com DDD)" value={obPhone} onChange={(e) => setObPhone(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input type="email" placeholder="E-mail" value={obEmail} onChange={(e) => setObEmail(e.target.value)} className="pl-10 bg-secondary border-border" />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <PasswordInput placeholder="Crie uma senha (mín. 6 caracteres)" value={obPassword} onChange={(e) => setObPassword(e.target.value)} minLength={6} className="pl-10 bg-secondary border-border" />
+            </div>
             <div>
               <label className="text-xs text-muted-foreground">Data de nascimento (ganhe 10% no seu aniversário 🎂)</label>
               <Input type="date" value={obBirthday} onChange={(e) => setObBirthday(e.target.value)} />
             </div>
             <Button onClick={completeOnboarding} disabled={loading} className="w-full gold-gradient text-primary-foreground">
-              {loading ? "Salvando..." : "Continuar"}
+              {loading ? "Salvando..." : "Concluir cadastro"}
             </Button>
           </div>
         </motion.div>
