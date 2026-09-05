@@ -125,19 +125,40 @@ export default function ClienteLogin() {
 
   const completeOnboarding = async () => {
     if (!user) return;
-    if (!obName.trim() || !obEmail.trim()) { toast.error("Nome e e-mail são obrigatórios"); return; }
+    if (!obName.trim()) { toast.error("Informe seu nome"); return; }
+    if (!obEmail.trim()) { toast.error("Informe seu e-mail"); return; }
+    if (obPassword.length < 6) { toast.error("A senha precisa de ao menos 6 caracteres"); return; }
     setLoading(true);
-    const { error } = await supabase.from("profiles").upsert({
-      user_id: user.id,
-      full_name: obName.trim(),
-      email: obEmail.trim(),
-      phone: user.phone || phone || null,
-      birthday: obBirthday || null,
-    }, { onConflict: "user_id" });
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Cadastro completo!");
-    navigate(redirect);
+    try {
+      const digits = obPhone.replace(/\D/g, "");
+      // Set real email + password on the account created via WhatsApp code
+      const { error: updErr } = await supabase.auth.updateUser({
+        email: obEmail.trim(),
+        password: obPassword,
+      });
+      if (updErr) {
+        // If email change fails (e.g. already in use), still save the password
+        const { error: pwErr } = await supabase.auth.updateUser({ password: obPassword });
+        if (pwErr) throw updErr;
+        toast.info("Senha definida. O e-mail informado já está em uso; usamos seu WhatsApp como login.");
+      } else {
+        toast.info("Enviamos um e-mail de confirmação para validar seu endereço.");
+      }
+      const { error } = await supabase.from("profiles").upsert({
+        user_id: user.id,
+        full_name: obName.trim(),
+        email: obEmail.trim(),
+        phone: digits || user.phone || null,
+        birthday: obBirthday || null,
+      }, { onConflict: "user_id" });
+      if (error) throw error;
+      toast.success("Cadastro completo!");
+      navigate(redirect);
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao salvar cadastro");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Onboarding screen
