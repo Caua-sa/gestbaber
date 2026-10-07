@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone, ShieldCheck, Bell } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone, ShieldCheck, Bell, Link2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Agendamento", url: "/agendamento", icon: Calendar },
+  { title: "Links & Pedidos", url: "/admin/links", icon: Link2 },
   { title: "Clientes", url: "/admin/clientes", icon: Users },
   { title: "Barbeiros", url: "/admin/barbeiros", icon: Scissors },
   { title: "Cortes & Preços", url: "/admin/servicos", icon: Scissors },
