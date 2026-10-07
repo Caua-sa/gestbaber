@@ -70,7 +70,7 @@ export default function ClienteLogin() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -79,7 +79,17 @@ export default function ClienteLogin() {
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail.");
+        if (data.user && phone.replace(/\D/g, "")) {
+          await supabase.from("profiles").upsert({
+            user_id: data.user.id, full_name: fullName, email, phone: phone.replace(/\D/g, ""),
+          }, { onConflict: "user_id" });
+        }
+        if (!data.session) {
+          const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
+          if (e2) throw e2;
+        }
+        toast.success("Conta criada! Bem-vindo.");
+        navigate(redirect);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
