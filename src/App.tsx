@@ -36,6 +36,9 @@ import AdminSignup from "./pages/admin/Signup";
 import ClienteLogin from "./pages/cliente/Login";
 import RecuperarSenha from "./pages/RecuperarSenha";
 import ClientePortal from "./pages/cliente/Portal";
+import AgendarRapido from "./pages/AgendarRapido";
+import ShortRedirect from "./pages/ShortRedirect";
+import AdminLinks from "./pages/admin/AdminLinks";
 import NotFound from "./pages/NotFound";
 import { PasswordGate } from "./components/PasswordGate";
 
@@ -107,6 +110,9 @@ const App = () => (
             <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AppLayout><AdminWhatsApp /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/marketing" element={<ProtectedAdminRoute><AppLayout><AdminMarketing /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/notificacoes" element={<ProtectedAdminRoute><AppLayout><AdminNotificacoes /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/agendar/:slug" element={<AgendarRapido />} />
+            <Route path="/l/:code" element={<ShortRedirect />} />
+            <Route path="/admin/links" element={<ProtectedAdminRoute><AppLayout><AdminLinks /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

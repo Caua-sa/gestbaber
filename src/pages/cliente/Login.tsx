@@ -70,7 +70,7 @@ export default function ClienteLogin() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -79,7 +79,17 @@ export default function ClienteLogin() {
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail.");
+        if (data.user) {
+          await supabase.from("profiles").upsert({
+            user_id: data.user.id, full_name: fullName, email, phone: phone.replace(/\D/g, "") || null,
+          }, { onConflict: "user_id" });
+        }
+        if (!data.session) {
+          const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
+          if (e2) throw e2;
+        }
+        toast.success("Conta criada! Bem-vindo.");
+        navigate(redirect);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -284,6 +294,12 @@ export default function ClienteLogin() {
                       required
                       className="pl-10 bg-secondary border-border"
                     />
+                  </div>
+                )}
+                {mode === "signup" && (
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Número (opcional)" value={phone} onChange={(e) => setPhone(e.target.value)} className="pl-10 bg-secondary border-border" />
                   </div>
                 )}
                 <div className="relative">

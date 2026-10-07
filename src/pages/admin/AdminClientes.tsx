@@ -223,7 +223,7 @@ export default function AdminClientes() {
             <form onSubmit={handleCreate} className="space-y-3 mt-2">
               <Input placeholder="Nome completo" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
               <Input type="email" placeholder="E-mail" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-              <Input placeholder="WhatsApp (com DDD, só números)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <Input placeholder="Número (opcional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               <div>
                 <label className="text-xs text-muted-foreground">🎂 Data de aniversário (o cliente ganha desconto automático na loja no dia)</label>
                 <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
