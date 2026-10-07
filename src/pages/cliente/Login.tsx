@@ -79,9 +79,9 @@ export default function ClienteLogin() {
           },
         });
         if (error) throw error;
-        if (data.user && phone.replace(/\D/g, "")) {
+        if (data.user) {
           await supabase.from("profiles").upsert({
-            user_id: data.user.id, full_name: fullName, email, phone: phone.replace(/\D/g, ""),
+            user_id: data.user.id, full_name: fullName, email, phone: phone.replace(/\D/g, "") || null,
           }, { onConflict: "user_id" });
         }
         if (!data.session) {
@@ -294,6 +294,12 @@ export default function ClienteLogin() {
                       required
                       className="pl-10 bg-secondary border-border"
                     />
+                  </div>
+                )}
+                {mode === "signup" && (
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Número (opcional)" value={phone} onChange={(e) => setPhone(e.target.value)} className="pl-10 bg-secondary border-border" />
                   </div>
                 )}
                 <div className="relative">
