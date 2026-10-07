@@ -170,6 +170,59 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_bookings: {
+        Row: {
+          barber: string | null
+          barbershop_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          phone: string | null
+          preferred_date: string | null
+          preferred_time: string | null
+          service: string | null
+          status: string
+        }
+        Insert: {
+          barber?: string | null
+          barbershop_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id: string
+          phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          service?: string | null
+          status?: string
+        }
+        Update: {
+          barber?: string | null
+          barbershop_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          phone?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          service?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_bookings_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insumos: {
         Row: {
           active: boolean
@@ -749,6 +802,36 @@ export type Database = {
         }
         Relationships: []
       }
+      short_links: {
+        Row: {
+          clicks: number
+          code: string
+          created_at: string
+          id: string
+          owner_id: string
+          target_url: string
+          title: string | null
+        }
+        Insert: {
+          clicks?: number
+          code: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          target_url: string
+          title?: string | null
+        }
+        Update: {
+          clicks?: number
+          code?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          target_url?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       signup_otps: {
         Row: {
           attempts: number
@@ -1097,6 +1180,7 @@ export type Database = {
         Returns: boolean
       }
       is_account_owner: { Args: { _user_id: string }; Returns: boolean }
+      resolve_short_link: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user" | "superadmin"
