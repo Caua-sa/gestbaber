@@ -50,6 +50,25 @@ function toISO(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).pa
 export default function Agendamento() {
   const { user } = useAuth();
   const { ownerId } = useAccountOwner();
+  const [saveApp, setSaveApp] = useState<any>(null);
+  const [saveForm, setSaveForm] = useState({ full_name: "", phone: "", email: "", password: "" });
+  const [savingClient, setSavingClient] = useState(false);
+  const saveAsClient = async () => {
+    if (!saveApp) return;
+    if (!saveForm.full_name.trim() || !saveForm.email.trim() || saveForm.password.length < 6) {
+      toast.error("Informe nome, e-mail e senha (mín. 6)"); return;
+    }
+    setSavingClient(true);
+    const { data, error } = await supabase.functions.invoke("create-admin-user", {
+      body: { action: "create", email: saveForm.email.trim(), password: saveForm.password, full_name: saveForm.full_name.trim(), phone: saveForm.phone.replace(/\D/g, "") || null, role: "user" },
+    });
+    const newId = (data as any)?.user?.id;
+    if (error || !newId) { setSavingClient(false); toast.error((data as any)?.error || error?.message || "Erro ao salvar cliente"); return; }
+    await supabase.from("appointments").update({ user_id: newId }).eq("id", saveApp.id);
+    setSavingClient(false); setSaveApp(null);
+    toast.success("Cliente salvo!");
+    fetchAppointments();
+  };
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<SvcOpt[]>([]);
   const [barbers, setBarbers] = useState<BarberOpt[]>([]);
