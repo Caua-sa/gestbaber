@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
 
 function parseNote(notes: string | null) {
   if (!notes) return { name: "Cliente", phone: "", obs: "" };
-  const clean = notes.replace(/\s*\[appt:[0-9a-f-]+\]\s*$/i, "");
+  const clean = notes.replace(/\s*\[appt:[0-9a-f-]+\]\s*$/i, "").replace(/\s*\[guest\]/g, "");
   const [name = "Cliente", phone = "", obs = ""] = clean.split("||");
   return { name, phone, obs };
 }
@@ -492,7 +492,8 @@ export default function Agendamento() {
             {appointments.map((app, i) => {
               const note = parseNote(app.notes);
               const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.pendente;
-              const profile = app.user_id ? profileNames[app.user_id] : undefined;
+              const isGuest = !!app.user_id && app.user_id === ownerId;
+              const profile = app.user_id && !isGuest ? profileNames[app.user_id] : undefined;
               const displayName = profile?.name || note.name;
               const displayPhone = note.phone || profile?.phone || "";
               return (
@@ -520,6 +521,11 @@ export default function Agendamento() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {isGuest && (
+                        <Button variant="outline" size="sm" onClick={() => { setSaveApp(app); setSaveForm({ full_name: note.name, phone: note.phone, email: "", password: "" }); }} className="h-8 gap-1.5">
+                          <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
                         <Bell className="h-3.5 w-3.5" /> Avisar
                       </Button>
