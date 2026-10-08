@@ -50,12 +50,33 @@ export default function AdminLinks() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-4xl gold-text">Links & Pedidos</h1>
-        <p className="text-muted-foreground text-sm">Agendamento sem cadastro e encurtador de links</p>
-      </div>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6">
+        <motion.div aria-hidden className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl"
+          animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 8, repeat: Infinity }} />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-5xl gold-text tracking-wide">Links & Pedidos</h1>
+            <p className="text-muted-foreground text-sm">Agendamento sem cadastro e encurtador de links</p>
+          </div>
+          <div className="flex gap-3">
+            {[
+              { label: "Novos", value: requests.filter(r => r.status === "novo").length, icon: Inbox },
+              { label: "Pedidos", value: requests.length, icon: Check },
+              { label: "Cliques", value: links.reduce((a, l) => a + (l.clicks || 0), 0), icon: MousePointerClick },
+            ].map((k, i) => (
+              <motion.div key={k.label} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 + i * 0.08 }}
+                className="rounded-xl border border-border bg-background/60 backdrop-blur px-4 py-3 min-w-[90px]">
+                <k.icon className="h-4 w-4 text-primary mb-1" />
+                <p className="font-display text-3xl leading-none">{k.value}</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-primary/30 rounded-xl p-5">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card/80 backdrop-blur border border-primary/30 rounded-2xl p-5 shadow-lg">
         <p className="text-sm font-medium mb-2">Link de agendamento rápido (envie para possíveis clientes)</p>
         {slug ? (
           <div className="flex flex-wrap gap-2">
@@ -68,7 +89,7 @@ export default function AdminLinks() {
       </motion.div>
 
       <Tabs defaultValue="pedidos">
-        <TabsList>
+        <TabsList className="rounded-xl bg-secondary/60 p-1">
           <TabsTrigger value="pedidos" className="gap-1"><Inbox className="h-4 w-4" />Pedidos ({requests.filter(r => r.status === "novo").length})</TabsTrigger>
           <TabsTrigger value="links" className="gap-1"><Link2 className="h-4 w-4" />Encurtador</TabsTrigger>
         </TabsList>
@@ -77,7 +98,8 @@ export default function AdminLinks() {
           {requests.length === 0 && <p className="text-sm text-muted-foreground">Nenhum pedido ainda.</p>}
           {requests.map((r, i) => (
             <motion.div key={r.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-              className="bg-card border border-border rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
+              whileHover={{ y: -2 }}
+              className="bg-card/80 backdrop-blur border border-border hover:border-primary/40 transition-colors rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between shadow-sm">
               <div className="space-y-0.5">
                 <p className="font-medium flex items-center gap-2">{r.name}
                   <Badge variant={r.status === "novo" ? "default" : "secondary"}>{r.status}</Badge></p>
@@ -96,7 +118,7 @@ export default function AdminLinks() {
         </TabsContent>
 
         <TabsContent value="links" className="space-y-4 mt-4">
-          <div className="bg-card border border-border rounded-xl p-4 grid gap-2 md:grid-cols-[2fr_1fr_1fr_auto]">
+          <div className="bg-card/80 backdrop-blur border border-primary/20 rounded-2xl p-4 grid gap-2 md:grid-cols-[2fr_1fr_1fr_auto]">
             <Input placeholder="https://link-longo..." value={url} onChange={e => setUrl(e.target.value)} />
             <Input placeholder="Nome (opcional)" value={title} onChange={e => setTitle(e.target.value)} />
             <Input placeholder="Código (opcional)" value={code} onChange={e => setCode(e.target.value)} />
@@ -105,7 +127,7 @@ export default function AdminLinks() {
           {links.map(l => {
             const short = `${origin}/l/${l.code}`;
             return (
-              <div key={l.id} className="bg-card border border-border rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
+              <motion.div key={l.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -2 }} className="bg-card/80 backdrop-blur border border-border hover:border-primary/40 transition-colors rounded-2xl p-4 flex flex-wrap gap-3 items-center justify-between">
                 <div className="min-w-0">
                   <p className="font-medium text-primary">{short}</p>
                   <p className="text-xs text-muted-foreground truncate max-w-md">{l.title ? `${l.title} — ` : ""}{l.target_url}</p>
@@ -115,7 +137,7 @@ export default function AdminLinks() {
                   <Button size="sm" variant="outline" onClick={() => copy(short)} className="gap-1"><Copy className="h-4 w-4" />Copiar</Button>
                   <Button size="icon" variant="ghost" onClick={() => delLink(l.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </TabsContent>
