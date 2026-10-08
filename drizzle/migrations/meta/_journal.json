@@ -8,6 +8,13 @@
       "when": 1791391571403,
       "tag": "0000_guest_bookings_short_links",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791434556613,
+      "tag": "0001_guest_booking_to_appointment",
+      "breakpoints": true
     }
   ]
 }
