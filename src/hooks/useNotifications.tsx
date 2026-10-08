@@ -40,7 +40,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("notifications-feed")
+      .channel(`notifications-feed-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => load())
       .subscribe();
     return () => {
