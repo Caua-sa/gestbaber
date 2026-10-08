@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText, Bell, Volume2, VolumeX } from "lucide-react";
+import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText, Bell, Volume2, VolumeX, UserPlus } from "lucide-react";
 import { generateReceiptPDF } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -40,7 +40,7 @@ const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
 
 function parseNote(notes: string | null) {
   if (!notes) return { name: "Cliente", phone: "", obs: "" };
-  const clean = notes.replace(/\s*\[appt:[0-9a-f-]+\]\s*$/i, "");
+  const clean = notes.replace(/\s*\[appt:[0-9a-f-]+\]\s*$/i, "").replace(/\s*\[guest\]/g, "");
   const [name = "Cliente", phone = "", obs = ""] = clean.split("||");
   return { name, phone, obs };
 }
@@ -50,6 +50,25 @@ function toISO(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).pa
 export default function Agendamento() {
   const { user } = useAuth();
   const { ownerId } = useAccountOwner();
+  const [saveApp, setSaveApp] = useState<any>(null);
+  const [saveForm, setSaveForm] = useState({ full_name: "", phone: "", email: "", password: "" });
+  const [savingClient, setSavingClient] = useState(false);
+  const saveAsClient = async () => {
+    if (!saveApp) return;
+    if (!saveForm.full_name.trim() || !saveForm.email.trim() || saveForm.password.length < 6) {
+      toast.error("Informe nome, e-mail e senha (mín. 6)"); return;
+    }
+    setSavingClient(true);
+    const { data, error } = await supabase.functions.invoke("create-admin-user", {
+      body: { action: "create", email: saveForm.email.trim(), password: saveForm.password, full_name: saveForm.full_name.trim(), phone: saveForm.phone.replace(/\D/g, "") || null, role: "user" },
+    });
+    const newId = (data as any)?.user?.id;
+    if (error || !newId) { setSavingClient(false); toast.error((data as any)?.error || error?.message || "Erro ao salvar cliente"); return; }
+    await supabase.from("appointments").update({ user_id: newId }).eq("id", saveApp.id);
+    setSavingClient(false); setSaveApp(null);
+    toast.success("Cliente salvo!");
+    fetchAppointments();
+  };
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<SvcOpt[]>([]);
   const [barbers, setBarbers] = useState<BarberOpt[]>([]);
@@ -492,7 +511,8 @@ export default function Agendamento() {
             {appointments.map((app, i) => {
               const note = parseNote(app.notes);
               const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.pendente;
-              const profile = app.user_id ? profileNames[app.user_id] : undefined;
+              const isGuest = !!app.user_id && app.user_id === ownerId;
+              const profile = app.user_id && !isGuest ? profileNames[app.user_id] : undefined;
               const displayName = profile?.name || note.name;
               const displayPhone = note.phone || profile?.phone || "";
               return (
@@ -520,6 +540,11 @@ export default function Agendamento() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {isGuest && (
+                        <Button variant="outline" size="sm" onClick={() => { setSaveApp(app); setSaveForm({ full_name: note.name, phone: note.phone, email: "", password: "" }); }} className="h-8 gap-1.5">
+                          <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
+                        </Button>
+                      )}
                       <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
                         <Bell className="h-3.5 w-3.5" /> Avisar
                       </Button>
