@@ -174,6 +174,7 @@ export type Database = {
         Row: {
           barber: string | null
           barbershop_id: string
+          client_user_id: string | null
           created_at: string
           id: string
           name: string
@@ -188,6 +189,7 @@ export type Database = {
         Insert: {
           barber?: string | null
           barbershop_id: string
+          client_user_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -202,6 +204,7 @@ export type Database = {
         Update: {
           barber?: string | null
           barbershop_id?: string
+          client_user_id?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -1170,6 +1173,13 @@ export type Database = {
       }
     }
     Functions: {
+      find_client_by_phone: {
+        Args: { _owner_id: string; _phone: string }
+        Returns: {
+          full_name: string
+          user_id: string
+        }[]
+      }
       get_account_owner: { Args: { _user_id: string }; Returns: string }
       has_birthday_today: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
