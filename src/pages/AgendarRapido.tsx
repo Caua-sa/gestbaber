@@ -30,6 +30,17 @@ export default function AgendarRapido() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [known, setKnown] = useState<string | null>(null);
+  const [sessionUid, setSessionUid] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id;
+      if (!uid) return;
+      setSessionUid(uid);
+      const { data: p } = await supabase.from("profiles").select("full_name,phone").eq("user_id", uid).maybeSingle();
+      if (p?.full_name) { setName(p.full_name); setKnown(p.full_name); }
+      if (p?.phone) setPhone(p.phone);
+    });
+  }, []);
   const lookupPhone = async (v: string) => {
     const digits = v.replace(/\D/g, "");
     if (!shop || digits.length < 10) { setKnown(null); return; }
@@ -64,6 +75,16 @@ export default function AgendarRapido() {
   const submit = async () => {
     if (!shop) return;
     setSending(true);
+    if (sessionUid) {
+      const svc = services.find(s => s.name === service);
+      const brb = barbers.find(b => b.name === barber);
+      const { error: e2 } = await supabase.from("appointments").insert({
+        user_id: sessionUid, owner_id: shop.owner_id, barbershop_id: shop.id, service, barber,
+        barber_id: brb?.id || null, price: svc?.price || 0, appointment_date: date, appointment_time: time,
+        status: "pendente", notes: `${name.trim()}||${phone.replace(/\D/g, "")}||${notes.trim()}`,
+      });
+      if (!e2) { setSending(false); setDone(true); return; }
+    }
     const { error } = await supabase.from("guest_bookings").insert({
       barbershop_id: shop.id, owner_id: shop.owner_id, name: name.trim(),
       phone: phone.replace(/\D/g, "") || null, service, barber,
@@ -133,7 +154,7 @@ export default function AgendarRapido() {
                 )}
                 {step === 1 && (
                   <div className="grid grid-cols-2 gap-3">
-                    {[{ id: "any", name: "Sem preferência", photo_url: null }, ...barbers].map((b, i) => (
+                    {barbers.map((b, i) => (
                       <motion.button key={b.id} type="button" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
                         whileHover={{ y: -4 }} whileTap={{ scale: 0.96 }} onClick={() => setBarber(b.name)}
                         className={cn("p-4 rounded-xl border flex flex-col items-center gap-2", barber === b.name ? "border-primary bg-primary/10" : "border-border bg-secondary/50")}>
@@ -173,6 +194,7 @@ export default function AgendarRapido() {
                     <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input placeholder="Seu número (já é cliente? só digite)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
                     {known && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-primary flex items-center gap-1"><Check className="h-4 w-4" />Olá, {known}! Já encontramos seu cadastro.</motion.p>}
+                    {known && !sessionUid && <a href="/cliente/login" className="text-xs underline text-primary">Entrar na minha conta para agendar pelo meu login</a>}
                     <div className="relative"><User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
                     <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />

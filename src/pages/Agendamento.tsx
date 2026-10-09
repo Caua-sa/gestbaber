@@ -53,8 +53,9 @@ export default function Agendamento() {
   const [saveApp, setSaveApp] = useState<any>(null);
   const [saveForm, setSaveForm] = useState({ full_name: "", phone: "", email: "", password: "" });
   const [savingClient, setSavingClient] = useState(false);
-  const saveAsClient = async () => {
-    if (!saveApp) return;
+  const saveAsClient = async (app: any, f: { full_name: string; phone: string; email: string; password: string }) => {
+    const saveApp = app; const saveForm = f;
+    if (!saveApp || savingClient) return;
     if (!saveForm.full_name.trim()) { toast.error("Informe o nome"); return; }
     const digits = saveForm.phone.replace(/\D/g, "");
     const email = saveForm.email.trim() || `${digits || Date.now()}.${Math.random().toString(36).slice(2, 6)}@cliente.barber`;
@@ -547,7 +548,7 @@ export default function Agendamento() {
                         </Button>
                       )}
                       {isGuest && (
-                        <Button variant="outline" size="sm" onClick={() => { setSaveApp(app); setSaveForm({ full_name: note.name, phone: note.phone, email: "", password: "" }); }} className="h-8 gap-1.5">
+                        <Button variant="outline" size="sm" disabled={savingClient} onClick={() => saveAsClient(app, { full_name: note.name, phone: note.phone, email: "", password: "" })} className="h-8 gap-1.5">
                           <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
                         </Button>
                       )}
