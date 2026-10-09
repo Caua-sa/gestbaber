@@ -29,6 +29,14 @@ export default function AgendarRapido() {
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [known, setKnown] = useState<string | null>(null);
+  const lookupPhone = async (v: string) => {
+    const digits = v.replace(/\D/g, "");
+    if (!shop || digits.length < 10) { setKnown(null); return; }
+    const { data } = await supabase.rpc("find_client_by_phone" as any, { _owner_id: shop.owner_id, _phone: digits });
+    const row = Array.isArray(data) ? data[0] : null;
+    if (row?.full_name) { setKnown(row.full_name); setName(row.full_name); } else setKnown(null);
+  };
 
   useEffect(() => {
     (async () => {
@@ -162,10 +170,11 @@ export default function AgendarRapido() {
                 )}
                 {step === 3 && (
                   <div className="space-y-3">
+                    <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="Seu número (já é cliente? só digite)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
+                    {known && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-primary flex items-center gap-1"><Check className="h-4 w-4" />Olá, {known}! Já encontramos seu cadastro.</motion.p>}
                     <div className="relative"><User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
-                    <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Número (opcional)" value={phone} onChange={e => setPhone(e.target.value)} className="pl-10 bg-secondary border-border" /></div>
                     <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />
                     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm space-y-1">
                       <p className="flex items-center gap-2"><Scissors className="h-3 w-3 text-primary" />{service} · {barber}</p>
