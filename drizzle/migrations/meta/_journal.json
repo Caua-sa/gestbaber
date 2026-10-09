@@ -22,6 +22,13 @@
       "when": 1791523249620,
       "tag": "0002_scope_role_policies_to_authenticated",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791523282225,
+      "tag": "0003_guest_booking_keep_status",
+      "breakpoints": true
     }
   ]
 }
