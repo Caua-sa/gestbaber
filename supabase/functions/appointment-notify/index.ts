@@ -62,13 +62,24 @@ Deno.serve(async (req) => {
     if (!s) throw new Error("WhatsApp não configurado");
 
     if ((s.mode || "cloud") === "baileys") {
-      if (!s.baileys_url) throw new Error("Servidor Baileys não configurado");
-      const r = await fetch(`${s.baileys_url.replace(/\/$/, "")}/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}) },
-        body: JSON.stringify({ to, message }),
-      });
-      if (!r.ok) throw new Error("Falha ao enviar via Baileys");
+      if (!s.baileys_url) throw new Error("Servidor do WhatsApp (QR Code) não configurado. Vá em WhatsApp e conecte.");
+      let r: Response;
+      try {
+        r = await fetch(`${s.baileys_url.replace(/\/$/, "")}/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}) },
+          body: JSON.stringify({ to, message }),
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch {
+        throw new Error("Servidor do WhatsApp está desligado ou o endereço mudou. Ligue o servidor e atualize o endereço em WhatsApp.");
+      }
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        if (r.status === 401) throw new Error("Token do servidor WhatsApp incorreto.");
+        if (String(body?.error || "").includes("conectado")) throw new Error("WhatsApp desconectado. Gere o QR Code novamente em WhatsApp.");
+        throw new Error(`Falha ao enviar pelo WhatsApp: ${body?.error || r.status}`);
+      }
     } else {
       if (!s.phone_number_id || !s.access_token) throw new Error("Meta Cloud API não configurada");
       const r = await fetch(`https://graph.facebook.com/v20.0/${s.phone_number_id}/messages`, {
