@@ -53,20 +53,22 @@ export default function Agendamento() {
   const [saveApp, setSaveApp] = useState<any>(null);
   const [saveForm, setSaveForm] = useState({ full_name: "", phone: "", email: "", password: "" });
   const [savingClient, setSavingClient] = useState(false);
-  const saveAsClient = async () => {
-    if (!saveApp) return;
-    if (!saveForm.full_name.trim() || !saveForm.email.trim() || saveForm.password.length < 6) {
-      toast.error("Informe nome, e-mail e senha (mín. 6)"); return;
-    }
+  const saveAsClient = async (app: any, f: { full_name: string; phone: string; email: string; password: string }) => {
+    const saveApp = app; const saveForm = f;
+    if (!saveApp || savingClient) return;
+    if (!saveForm.full_name.trim()) { toast.error("Informe o nome"); return; }
+    const digits = saveForm.phone.replace(/\D/g, "");
+    const email = saveForm.email.trim() || `${digits || Date.now()}.${Math.random().toString(36).slice(2, 6)}@cliente.barber`;
+    const password = saveForm.password.length >= 6 ? saveForm.password : `Cli${Math.random().toString(36).slice(2, 10)}!9`;
     setSavingClient(true);
     const { data, error } = await supabase.functions.invoke("create-admin-user", {
-      body: { action: "create", email: saveForm.email.trim(), password: saveForm.password, full_name: saveForm.full_name.trim(), phone: saveForm.phone.replace(/\D/g, "") || null, role: "user" },
+      body: { action: "create", email, password, full_name: saveForm.full_name.trim(), phone: digits || null, role: "user" },
     });
     const newId = (data as any)?.user?.id;
     if (error || !newId) { setSavingClient(false); toast.error((data as any)?.error || error?.message || "Erro ao salvar cliente"); return; }
     await supabase.from("appointments").update({ user_id: newId }).eq("id", saveApp.id);
     setSavingClient(false); setSaveApp(null);
-    toast.success("Cliente salvo!");
+    toast.success("Cliente salvo na aba Clientes!");
     fetchAppointments();
   };
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -540,8 +542,13 @@ export default function Agendamento() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {app.status === "pendente" && (
+                        <Button size="sm" onClick={() => handleStatusChange(app, "confirmado")} className="h-8 gap-1.5 gold-gradient text-primary-foreground">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Confirmar
+                        </Button>
+                      )}
                       {isGuest && (
-                        <Button variant="outline" size="sm" onClick={() => { setSaveApp(app); setSaveForm({ full_name: note.name, phone: note.phone, email: "", password: "" }); }} className="h-8 gap-1.5">
+                        <Button variant="outline" size="sm" disabled={savingClient} onClick={() => saveAsClient(app, { full_name: note.name, phone: note.phone, email: "", password: "" })} className="h-8 gap-1.5">
                           <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
                         </Button>
                       )}
