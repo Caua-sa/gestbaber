@@ -170,6 +170,77 @@ export type Database = {
         }
         Relationships: []
       }
+      comanda_items: {
+        Row: {
+          comanda_id: string
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          product_id: string | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          comanda_id: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          comanda_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          product_id?: string | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comanda_items_comanda_id_fkey"
+            columns: ["comanda_id"]
+            isOneToOne: false
+            referencedRelation: "comandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comandas: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          customer_name: string
+          id: string
+          owner_id: string
+          status: string
+          total: number
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          customer_name: string
+          id?: string
+          owner_id: string
+          status?: string
+          total?: number
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          customer_name?: string
+          id?: string
+          owner_id?: string
+          status?: string
+          total?: number
+        }
+        Relationships: []
+      }
       guest_bookings: {
         Row: {
           barber: string | null
