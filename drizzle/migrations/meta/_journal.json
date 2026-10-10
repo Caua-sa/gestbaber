@@ -29,6 +29,13 @@
       "when": 1791523282225,
       "tag": "0003_guest_booking_keep_status",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791610402385,
+      "tag": "0004_prevent_double_booking",
+      "breakpoints": true
     }
   ]
 }
