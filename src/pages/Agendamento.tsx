@@ -435,7 +435,7 @@ export default function Agendamento() {
                             !taken && !selected && "bg-secondary border-border hover:border-primary/50",
                             selected && "gold-gradient text-primary-foreground border-primary shadow-md scale-105",
                           )}
-                        >{t}</button>
+                        >{taken ? `✕ ${t}` : t}</button>
                       );
                     })}
                   </div>

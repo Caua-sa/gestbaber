@@ -26,6 +26,7 @@ import AdminGanhosBarbeiros from "./pages/admin/AdminGanhosBarbeiros";
 import AdminInsumos from "./pages/admin/AdminInsumos";
 import AdminClientes from "./pages/admin/AdminClientes";
 import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
+import AdminExtensao from "./pages/admin/AdminExtensao";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import AdminNotificacoes from "./pages/admin/AdminNotificacoes";
 import TvAgenda from "./pages/TvAgenda";
@@ -107,6 +108,7 @@ const App = () => (
             <Route path="/admin/ganhos-barbeiros" element={<ProtectedAdminRoute><AppLayout><AdminGanhosBarbeiros /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/insumos" element={<ProtectedAdminRoute><AppLayout><AdminInsumos /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/clientes" element={<ProtectedAdminRoute><AppLayout><AdminClientes /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/extensao" element={<ProtectedAdminRoute><AppLayout><AdminExtensao /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AppLayout><AdminWhatsApp /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/marketing" element={<ProtectedAdminRoute><AppLayout><AdminMarketing /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/notificacoes" element={<ProtectedAdminRoute><AppLayout><AdminNotificacoes /></AppLayout></ProtectedAdminRoute>} />
