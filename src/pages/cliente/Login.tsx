@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { lovable } from "@/integrations/lovable/index";
 
 function normalizePhone(raw: string) {
   const digits = raw.replace(/\D/g, "");
@@ -222,66 +223,19 @@ export default function ClienteLogin() {
 
         <div className="bg-card border border-border rounded-lg p-6">
           <Tabs defaultValue="email" className="w-full">
-            <TabsList className="grid grid-cols-2 w-full mb-4">
-              <TabsTrigger value="email">E-mail</TabsTrigger>
-              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="whatsapp" className="space-y-4">
-              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
-                O login por WhatsApp só funciona se a barbearia tiver a integração ativa (Meta Cloud ou QR).
-                Se não chegar código, use a aba <strong>E-mail</strong> — funciona imediatamente.
-              </div>
-              {!otpSent ? (
-                <>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Seu nome"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10 bg-secondary border-border"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="WhatsApp (com DDD)"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="pl-10 bg-secondary border-border"
-                    />
-                  </div>
-                  <Button onClick={sendOtp} disabled={loading} className="w-full">
-                    {loading ? "Enviando..." : "Receber código no WhatsApp"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Enviaremos um código de 6 dígitos direto no seu WhatsApp.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs text-muted-foreground">Código enviado para {normalizePhone(phone)}</p>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Código de 6 dígitos"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="pl-10 bg-secondary border-border"
-                      inputMode="numeric"
-                    />
-                  </div>
-                  <Button onClick={verifyOtp} disabled={loading} className="w-full">
-                    {loading ? "Validando..." : "Entrar"}
-                  </Button>
-                  <button onClick={() => { setOtpSent(false); setOtp(""); }} className="text-xs text-muted-foreground hover:text-primary mx-auto block">
-                    Reenviar / alterar número
-                  </button>
-                </>
-              )}
-            </TabsContent>
-
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mb-4"
+              disabled={loading}
+              onClick={async () => {
+                const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/cliente/login" });
+                if (r.error) toast.error(r.error.message || "Erro ao entrar com Google");
+              }}
+            >
+              Entrar com Google
+            </Button>
+            <div className="text-center text-xs text-muted-foreground mb-4">ou com e-mail</div>
             <TabsContent value="email">
               <form onSubmit={handleEmail} className="space-y-4">
                 {mode === "signup" && (
