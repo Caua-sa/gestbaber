@@ -65,6 +65,20 @@ export default function AgendarRapido() {
     })();
   }, [slug]);
 
+  const [busy, setBusy] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!shop || !date) { setBusy(new Set()); return; }
+    const brb = barbers.find(b => b.name === barber);
+    (async () => {
+      let q = supabase.from("tv_agenda_slots" as any).select("appointment_time,barber_id,status").eq("barbershop_id", shop.id).eq("appointment_date", date);
+      if (brb) q = q.eq("barber_id", brb.id);
+      const { data } = await q;
+      const set = new Set(((data as any[]) || []).filter(a => a.status !== "cancelado").map(a => String(a.appointment_time || "").slice(0, 5)));
+      setBusy(set);
+      if (set.has(time)) setTime("");
+    })();
+  }, [shop, date, barber, barbers]);
+
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i); return d;
   }), []);
@@ -91,7 +105,7 @@ export default function AgendarRapido() {
       preferred_date: date, preferred_time: time, notes: notes.trim() || null,
     });
     setSending(false);
-    if (error) { toast.error("Não foi possível enviar. Tente novamente."); return; }
+    if (error) { toast.error(error.message?.includes("reservado") ? "Esse horário acabou de ser reservado. Escolha outro." : "Não foi possível enviar. Tente novamente."); return; }
     setDone(true);
   };
 
@@ -181,9 +195,9 @@ export default function AgendarRapido() {
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {SLOTS.map(t => (
-                        <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date} onClick={() => setTime(t)}
-                          className={cn("py-2 rounded-lg border text-sm flex items-center justify-center gap-1 disabled:opacity-40", time === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/50")}>
-                          <Clock className="h-3 w-3" />{t}
+                        <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date || busy.has(t)} onClick={() => setTime(t)}
+                          className={cn("py-2 rounded-lg border text-sm flex items-center justify-center gap-1 disabled:opacity-40", busy.has(t) && "line-through border-destructive/40 text-destructive", time === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/50")}>
+                          {busy.has(t) ? <span className="font-bold">✕</span> : <Clock className="h-3 w-3" />}{t}
                         </motion.button>
                       ))}
                     </div>

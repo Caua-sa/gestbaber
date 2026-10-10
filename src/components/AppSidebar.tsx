@@ -36,7 +36,7 @@ const siteItems = [
   { title: "Banner IA", url: "/admin/banner-ia", icon: Sparkles },
   { title: "Marketing TV", url: "/admin/marketing", icon: Megaphone },
   { title: "Mercado Pago", url: "/admin/mercado-pago", icon: CreditCard },
-  { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
+  { title: "Extensão", url: "/admin/extensao", icon: MessageCircle },
 ];
 
 export function AppSidebar() {
