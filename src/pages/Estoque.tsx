@@ -13,6 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
+import { Construction } from "lucide-react";
+import { Comandas } from "@/components/estoque/Comandas";
+
+const FOOD = ["bebida", "bebidas", "comida", "comidas", "snack", "snacks", "doce", "doces", "lanche", "lanches", "conveniência", "conveniencia", "alimento", "alimentos", "refrigerante", "cerveja", "bala", "balas"];
+export const isFood = (c: string) => FOOD.includes((c || "").trim().toLowerCase());
 
 interface Product {
   id: string;
@@ -71,11 +76,12 @@ export default function Estoque() {
 
   const handleSave = async () => {
     if (!user || !ownerId) return;
+    if (!form.name.trim()) { toast.error("Informe o nome"); return; }
     const payload: any = {
       name: form.name, category: form.category || "Outros",
       stock: Number(form.stock), min_stock: Number(form.minStock),
       sell_price: Number(form.sellPrice), cost_price: Number(form.costPrice),
-      visible_on_site: form.visible, active: true,
+      visible_on_site: isFood(form.category) ? false : form.visible, active: true,
     };
     if (editing) {
       const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
@@ -130,10 +136,18 @@ export default function Estoque() {
             <StatCard title="Valor em Estoque" value={fmt(totalValue)} icon={Package} index={2} />
           </div>
 
-          {tab === "conveniencia" && (
-            <div className="bg-amber-500/10 border border-amber-500/30 text-amber-200 rounded-lg p-3 text-xs">
-              Itens de conveniência (bebidas, balas, snacks) ficam ocultos do site e do app do cliente. Use a tela de Vendas para registrar a saída.
-            </div>
+          {tab === "conveniencia" && user && ownerId && (
+            <>
+              <Comandas ownerId={ownerId} userId={user.id} products={list.filter(p => p.stock > 0) as any} onChange={fetchProducts} />
+              <div className="bg-card border border-dashed border-primary/40 rounded-lg p-4 flex items-center gap-3">
+                <Construction className="h-6 w-6 text-primary" />
+                <div>
+                  <p className="font-medium">Controle de mesa de sinuca</p>
+                  <p className="text-xs text-muted-foreground">Em construção — em breve você poderá controlar tempo e valor das mesas.</p>
+                </div>
+              </div>
+              <h2 className="font-display text-2xl">Produtos da conveniência</h2>
+            </>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -175,7 +189,15 @@ export default function Estoque() {
           <DialogHeader><DialogTitle className="font-display text-xl">{editing ? "Editar Item" : "Novo Item"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <Input placeholder="Nome" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="bg-secondary border-border" />
-            <Input placeholder="Categoria" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="bg-secondary border-border" />
+            <div>
+              <Input list="cat-list" placeholder="Categoria (ex: Bebida, Comida, Pomada)" value={form.category}
+                onChange={e => { const c = e.target.value; setForm({ ...form, category: c, visible: isFood(c) ? false : form.visible }); }}
+                className="bg-secondary border-border" />
+              <datalist id="cat-list">
+                {Array.from(new Set(["Bebida", "Comida", "Snack", "Doce", ...products.map(p => p.category)])).map(c => <option key={c} value={c} />)}
+              </datalist>
+              {isFood(form.category) && <p className="text-xs text-primary mt-1">Categoria de comida/bebida: vai automaticamente para a Conveniência.</p>}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Input type="number" placeholder="Estoque atual" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} className="bg-secondary border-border" />
               <Input type="number" placeholder="Estoque mínimo" value={form.minStock} onChange={e => setForm({ ...form, minStock: e.target.value })} className="bg-secondary border-border" />
