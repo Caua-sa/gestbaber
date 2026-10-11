@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ phone: p, customerName: name || "Cliente" }),
       });
       const d = await r.json().catch(() => ({}));
-      if (!r.ok || d?.success === false) return json({ error: d?.error || d?.message || "A extensão não enviou o código" }, 400);
+      if (!r.ok || !d || Object.keys(d).length === 0 || d?.success === false) return json({ error: d?.error || d?.message || "A extensão não respondeu. Ela precisa estar publicada (o link de teste do Google AI Studio bloqueia acesso de fora)." }, 400);
       return json({ ok: true });
     }
 
