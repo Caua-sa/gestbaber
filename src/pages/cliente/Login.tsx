@@ -48,6 +48,19 @@ export default function ClienteLogin() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      const logKey = `login-logged-${user.id}`;
+      if (!sessionStorage.getItem(logKey)) {
+        sessionStorage.setItem(logKey, "1");
+        const provider = (user.app_metadata as any)?.provider;
+        const method = sessionStorage.getItem("login-method") === "whatsapp" || (user.email || "").endsWith("@barberpro.local")
+          ? "whatsapp" : provider === "google" ? "google" : "perfil";
+        sessionStorage.removeItem("login-method");
+        await supabase.from("client_login_events").insert({
+          user_id: user.id, method,
+          email: user.email, phone: (user.email || "").match(/^wa_(\d+)@/)?.[1] || user.phone || null,
+          full_name: (user.user_metadata as any)?.full_name || (user.user_metadata as any)?.name || null,
+        });
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, email, birthday, phone")

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone, ShieldCheck, Bell, Link2 } from "lucide-react";
+import { LayoutDashboard, Calendar, DollarSign, Package, Users, Scissors, Sparkles, LogOut, ShoppingCart, CreditCard, Store, TrendingUp, Boxes, Crown, MessageCircle, Megaphone, ShieldCheck, Bell, Link2, LogIn } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +27,7 @@ const menuItems = [
   { title: "Estoque", url: "/estoque", icon: Package },
   { title: "Insumos", url: "/admin/insumos", icon: Boxes },
   { title: "Vendas", url: "/vendas", icon: ShoppingCart },
+  { title: "Logins Clientes", url: "/admin/logins", icon: LogIn },
   { title: "Notificações", url: "/admin/notificacoes", icon: Bell },
   { title: "Controle de Acesso", url: "/admin/controle-acesso", icon: ShieldCheck },
 ];
