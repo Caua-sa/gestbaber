@@ -40,6 +40,7 @@ import ClientePortal from "./pages/cliente/Portal";
 import AgendarRapido from "./pages/AgendarRapido";
 import ShortRedirect from "./pages/ShortRedirect";
 import AdminLinks from "./pages/admin/AdminLinks";
+import AdminLoginsClientes from "./pages/admin/AdminLoginsClientes";
 import NotFound from "./pages/NotFound";
 import { PasswordGate } from "./components/PasswordGate";
 
@@ -115,6 +116,7 @@ const App = () => (
             <Route path="/agendar/:slug" element={<AgendarRapido />} />
             <Route path="/l/:code" element={<ShortRedirect />} />
             <Route path="/admin/links" element={<ProtectedAdminRoute><AppLayout><AdminLinks /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/logins" element={<ProtectedAdminRoute><AppLayout><AdminLoginsClientes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -48,6 +48,19 @@ export default function ClienteLogin() {
   useEffect(() => {
     if (!user) return;
     (async () => {
+      const logKey = `login-logged-${user.id}`;
+      if (!sessionStorage.getItem(logKey)) {
+        sessionStorage.setItem(logKey, "1");
+        const provider = (user.app_metadata as any)?.provider;
+        const method = sessionStorage.getItem("login-method") === "whatsapp" || (user.email || "").endsWith("@barberpro.local")
+          ? "whatsapp" : provider === "google" ? "google" : "perfil";
+        sessionStorage.removeItem("login-method");
+        await supabase.from("client_login_events").insert({
+          user_id: user.id, method,
+          email: user.email, phone: (user.email || "").match(/^wa_(\d+)@/)?.[1] || user.phone || null,
+          full_name: (user.user_metadata as any)?.full_name || (user.user_metadata as any)?.name || null,
+        });
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, email, birthday, phone")
@@ -106,11 +119,11 @@ export default function ClienteLogin() {
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 10) { toast.error("Informe o WhatsApp com DDD"); return; }
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("signup-send-otp", {
-      body: { phone: digits, full_name: fullName || undefined },
+    const { data, error } = await supabase.functions.invoke("wa-ext-login", {
+      body: { action: "send", phone: digits },
     });
     setLoading(false);
-    if (error || (data as any)?.error) { toast.error((data as any)?.error || error?.message || "Erro"); return; }
+    if (error || (data as any)?.error) { toast.error((data as any)?.error || "Não foi possível enviar o código"); return; }
     setOtpSent(true);
     toast.success("Código enviado no seu WhatsApp");
   };
@@ -119,15 +132,16 @@ export default function ClienteLogin() {
     const digits = phone.replace(/\D/g, "");
     if (!otp) { toast.error("Informe o código"); return; }
     setLoading(true);
-    const { data, error } = await supabase.functions.invoke("signup-verify-otp", {
-      body: { phone: digits, code: otp },
+    const { data, error } = await supabase.functions.invoke("wa-ext-login", {
+      body: { action: "verify", phone: digits, code: otp },
     });
     if (error || (data as any)?.error) {
       setLoading(false);
-      toast.error((data as any)?.error || error?.message || "Código inválido");
+      toast.error((data as any)?.error || "Código inválido");
       return;
     }
     const { email: em, password: pw } = data as { email: string; password: string };
+    sessionStorage.setItem("login-method", "whatsapp");
     const { error: signErr } = await supabase.auth.signInWithPassword({ email: em, password: pw });
     setLoading(false);
     if (signErr) { toast.error(signErr.message); return; }
@@ -235,7 +249,30 @@ export default function ClienteLogin() {
             >
               Entrar com Google
             </Button>
-            <div className="text-center text-xs text-muted-foreground mb-4">ou com e-mail</div>
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="email">Perfil (e-mail)</TabsTrigger>
+              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            </TabsList>
+            <TabsContent value="whatsapp" className="space-y-4">
+              <div className="relative">
+                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="WhatsApp com DDD" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={otpSent} className="pl-10 bg-secondary border-border" />
+              </div>
+              {otpSent && (
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Código de 6 dígitos" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} className="pl-10 bg-secondary border-border tracking-widest" />
+                </div>
+              )}
+              <Button className="w-full" disabled={loading} onClick={otpSent ? verifyOtp : sendOtp}>
+                {loading ? "Aguarde..." : otpSent ? "Validar código" : "Receber código no WhatsApp"}
+              </Button>
+              {otpSent && (
+                <button type="button" className="w-full text-sm text-muted-foreground hover:text-primary" onClick={() => { setOtpSent(false); setOtp(""); }}>
+                  Trocar número / reenviar
+                </button>
+              )}
+            </TabsContent>
             <TabsContent value="email">
               <form onSubmit={handleEmail} className="space-y-4">
                 {mode === "signup" && (

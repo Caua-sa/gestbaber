@@ -170,6 +170,36 @@ export type Database = {
         }
         Relationships: []
       }
+      client_login_events: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          method: string
+          phone: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          method: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          method?: string
+          phone?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       comanda_items: {
         Row: {
           comanda_id: string
