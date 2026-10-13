@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scissors, User, Calendar, Clock, Check, ArrowRight, ArrowLeft, Phone, Sparkles } from "lucide-react";
+import { Scissors, User, Calendar, Clock, Check, ArrowRight, ArrowLeft, Phone, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,6 +86,27 @@ export default function AgendarRapido() {
   const steps = ["Serviço", "Barbeiro", "Horário", "Seus dados"];
   const canNext = [!!service, !!barber, !!date && !!time, name.trim().length > 1][step];
 
+  const storeKey = `agendar_${slug}`;
+  const [mine, setMine] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(`agendar_${slug}`) || "[]"); } catch { return []; } });
+  const [mineStatus, setMineStatus] = useState<Record<string, string>>({});
+  const [openSvc, setOpenSvc] = useState(false);
+  useEffect(() => {
+    if (!shop || mine.length === 0) return;
+    const load = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data } = await supabase.from("tv_agenda_slots" as any).select("appointment_date,appointment_time,barber_id,status").eq("barbershop_id", shop.id).gte("appointment_date", today);
+      const m: Record<string, string> = {};
+      ((data as any[]) || []).forEach(a => { m[`${a.appointment_date}|${String(a.appointment_time).slice(0, 5)}|${a.barber_id}`] = a.status; });
+      setMineStatus(m);
+    };
+    load(); const t = setInterval(load, 30000); return () => clearInterval(t);
+  }, [shop, mine]);
+  const saveMine = () => {
+    const brb = barbers.find(b => b.name === barber);
+    const next = [{ service, barber, barber_id: brb?.id, date, time }, ...mine].slice(0, 10);
+    setMine(next); localStorage.setItem(storeKey, JSON.stringify(next));
+  };
+
   const submit = async () => {
     if (!shop) return;
     setSending(true);
@@ -95,9 +116,9 @@ export default function AgendarRapido() {
       const { error: e2 } = await supabase.from("appointments").insert({
         user_id: sessionUid, owner_id: shop.owner_id, barbershop_id: shop.id, service, barber,
         barber_id: brb?.id || null, price: svc?.price || 0, appointment_date: date, appointment_time: time,
-        status: "pendente", notes: `${name.trim()}||${phone.replace(/\D/g, "")}||${notes.trim()}`,
+        status: "confirmado", notes: `${name.trim()}||${phone.replace(/\D/g, "")}||${notes.trim()}`,
       });
-      if (!e2) { setSending(false); setDone(true); return; }
+      if (!e2) { setSending(false); saveMine(); setDone(true); return; }
     }
     const { error } = await supabase.from("guest_bookings").insert({
       barbershop_id: shop.id, owner_id: shop.owner_id, name: name.trim(),
@@ -106,7 +127,7 @@ export default function AgendarRapido() {
     });
     setSending(false);
     if (error) { toast.error(error.message?.includes("reservado") ? "Esse horário acabou de ser reservado. Escolha outro." : "Não foi possível enviar. Tente novamente."); return; }
-    setDone(true);
+    saveMine(); setDone(true);
   };
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><Scissors className="h-8 w-8 text-primary animate-spin" /></div>;
@@ -135,8 +156,8 @@ export default function AgendarRapido() {
               className="h-20 w-20 rounded-full gold-gradient mx-auto flex items-center justify-center mb-4">
               <Check className="h-10 w-10 text-primary-foreground" />
             </motion.div>
-            <h2 className="font-display text-3xl">Pedido enviado!</h2>
-            <p className="text-muted-foreground text-sm mt-2">A barbearia vai entrar em contato para confirmar seu horário.</p>
+            <h2 className="font-display text-3xl">Agendamento confirmado!</h2>
+            <p className="text-muted-foreground text-sm mt-2">Seu horário já está reservado. Acompanhe abaixo.</p>
           </motion.div>
         ) : (
           <div className="bg-card/80 backdrop-blur border border-border rounded-2xl p-6 shadow-2xl">
@@ -155,15 +176,22 @@ export default function AgendarRapido() {
               <motion.div key={step} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.25 }} className="min-h-[280px]">
                 {step === 0 && (
                   <div className="grid gap-2">
+                    <button type="button" onClick={() => setOpenSvc(o => !o)} className="flex justify-between items-center p-4 rounded-xl border border-primary/40 bg-primary/5 font-medium">
+                      <span className="flex items-center gap-2"><Scissors className="h-4 w-4 text-primary" />{service || "Escolha o serviço"}</span>
+                      <motion.span animate={{ rotate: openSvc ? 180 : 0 }}><ChevronDown className="h-5 w-5 text-primary" /></motion.span>
+                    </button>
+                    <AnimatePresence initial={false}>{openSvc && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="grid gap-2 overflow-hidden">
                     {services.length === 0 && <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado.</p>}
                     {services.map((s, i) => (
                       <motion.button key={s.id} type="button" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setService(s.name)}
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setService(s.name); setOpenSvc(false); }}
                         className={cn("flex justify-between items-center p-4 rounded-xl border text-left transition-colors", service === s.name ? "border-primary bg-primary/10" : "border-border bg-secondary/50 hover:border-primary/50")}>
                         <span className="flex items-center gap-2 font-medium"><Scissors className="h-4 w-4 text-primary" />{s.name}</span>
                         <span className="gold-text font-semibold">{s.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
                       </motion.button>
                     ))}
+                    </motion.div>)}</AnimatePresence>
                   </div>
                 )}
                 {step === 1 && (
@@ -229,6 +257,27 @@ export default function AgendarRapido() {
                 <Button className="flex-1 gold-gradient text-primary-foreground" disabled={!canNext || sending} onClick={submit}>{sending ? "Enviando..." : "Enviar pedido"}</Button>
               )}
             </div>
+          </div>
+        )}
+
+        {mine.length > 0 && (
+          <div className="mt-6 bg-card/80 backdrop-blur border border-border rounded-2xl p-5">
+            <h3 className="font-display text-2xl mb-3">Meus agendamentos</h3>
+            <div className="space-y-2">
+              {mine.map((m, i) => {
+                const st = mineStatus[`${m.date}|${m.time}|${m.barber_id}`] || (m.date < new Date().toISOString().slice(0, 10) ? "concluído" : "confirmado");
+                return (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/40 text-sm">
+                    <div>
+                      <p className="font-medium">{m.service} · {m.barber}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(m.date + "T12:00").toLocaleDateString("pt-BR")} às {m.time}</p>
+                    </div>
+                    <span className={cn("text-[10px] px-2 py-1 rounded-full border capitalize", st === "cancelado" ? "border-destructive/40 text-destructive" : "border-primary/40 text-primary")}>{st}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {done && <Button variant="outline" className="w-full mt-3" onClick={() => { setDone(false); setStep(0); setTime(""); }}>Fazer outro agendamento</Button>}
           </div>
         )}
       </div>
