@@ -50,6 +50,13 @@
       "when": 1791686021037,
       "tag": "0006_client_login_events",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791898263308,
+      "tag": "0007_guest_booking_confirmed",
+      "breakpoints": true
     }
   ]
 }
