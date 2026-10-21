@@ -1,0 +1,1 @@
+ALTER TABLE public.barbershops ADD COLUMN site_appearance jsonb NOT NULL DEFAULT '{}'::jsonb; COMMENT ON COLUMN public.barbershops.site_appearance IS 'Public site color and layout preferences scoped to this barbershop';
