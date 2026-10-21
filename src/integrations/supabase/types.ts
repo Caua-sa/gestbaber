@@ -124,6 +124,7 @@ export type Database = {
           owner_id: string
           phone: string | null
           photos: Json
+          site_appearance: Json
           slug: string
           updated_at: string
           whatsapp: string | null
@@ -144,6 +145,7 @@ export type Database = {
           owner_id: string
           phone?: string | null
           photos?: Json
+          site_appearance?: Json
           slug: string
           updated_at?: string
           whatsapp?: string | null
@@ -164,6 +166,7 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           photos?: Json
+          site_appearance?: Json
           slug?: string
           updated_at?: string
           whatsapp?: string | null
