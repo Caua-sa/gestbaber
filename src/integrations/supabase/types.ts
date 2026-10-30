@@ -246,6 +246,7 @@ export type Database = {
       }
       comandas: {
         Row: {
+          appointment_id: string | null
           closed_at: string | null
           created_at: string
           customer_name: string
@@ -255,6 +256,7 @@ export type Database = {
           total: number
         }
         Insert: {
+          appointment_id?: string | null
           closed_at?: string | null
           created_at?: string
           customer_name: string
@@ -264,6 +266,7 @@ export type Database = {
           total?: number
         }
         Update: {
+          appointment_id?: string | null
           closed_at?: string | null
           created_at?: string
           customer_name?: string

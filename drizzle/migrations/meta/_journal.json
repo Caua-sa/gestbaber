@@ -64,6 +64,13 @@
       "when": 1792593843194,
       "tag": "0008_barbershop_site_appearance",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793365554837,
+      "tag": "0009_comanda_appointment_link",
+      "breakpoints": true
     }
   ]
 }
