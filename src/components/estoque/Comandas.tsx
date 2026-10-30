@@ -7,7 +7,8 @@ import { toast } from "sonner";
 
 interface Product { id: string; name: string; sell_price: number; stock: number; sold: number }
 interface Item { id: string; comanda_id: string; product_id: string | null; name: string; unit_price: number; quantity: number }
-interface Comanda { id: string; customer_name: string; created_at: string }
+interface Comanda { id: string; customer_name: string; created_at: string; appointment_id: string | null }
+import { generateComandaReceiptPDF } from "@/lib/receipt";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -18,7 +19,7 @@ export function Comandas({ ownerId, userId, products, onChange }: { ownerId: str
   const [pick, setPick] = useState<Record<string, string>>({});
 
   const load = async () => {
-    const { data: c } = await supabase.from("comandas").select("id, customer_name, created_at").eq("owner_id", ownerId).eq("status", "aberta").order("created_at");
+    const { data: c } = await supabase.from("comandas").select("id, customer_name, created_at, appointment_id").eq("owner_id", ownerId).eq("status", "aberta").order("created_at");
     setComandas((c as Comanda[]) || []);
     const ids = (c || []).map((x: any) => x.id);
     if (ids.length) {
@@ -60,14 +61,35 @@ export function Comandas({ ownerId, userId, products, onChange }: { ownerId: str
       const p = products.find(x => x.id === i.product_id);
       if (p) await supabase.from("products").update({ stock: Math.max(0, p.stock - i.quantity), sold: (p.sold || 0) + i.quantity }).eq("id", p.id);
     }
-    if (total > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    const svcTotal = its.filter(i => !i.product_id).reduce((s, i) => s + i.quantity * Number(i.unit_price), 0);
+    const prodTotal = total - svcTotal;
+    if (svcTotal > 0) {
+      const tag = c.appointment_id ? `[appt:${c.appointment_id}]` : null;
+      let exists = false;
+      if (tag) {
+        const { data } = await supabase.from("transactions").select("id").eq("owner_id", ownerId).ilike("notes", `%${tag}%`).maybeSingle();
+        exists = !!data;
+      }
+      if (!exists) await supabase.from("transactions").insert({
+        owner_id: ownerId, created_by: userId, type: "entrada", category: "Cortes", value: svcTotal,
+        description: `Comanda (serviço): ${c.customer_name}`, transaction_date: today, notes: tag,
+      });
+    }
+    if (prodTotal > 0) {
       await supabase.from("transactions").insert({
-        owner_id: ownerId, created_by: userId, type: "entrada", category: "Conveniência", value: total,
-        description: `Comanda: ${c.customer_name}`, transaction_date: new Date().toISOString().slice(0, 10),
+        owner_id: ownerId, created_by: userId, type: "entrada", category: "Conveniência", value: prodTotal,
+        description: `Comanda: ${c.customer_name}`, transaction_date: today,
       });
     }
     await supabase.from("comandas").update({ status: "fechada", total, closed_at: new Date().toISOString() }).eq("id", c.id);
-    toast.success("Comanda fechada e lançada no financeiro!");
+    if (c.appointment_id) await supabase.from("appointments").update({ status: "concluido" }).eq("id", c.appointment_id);
+    const { data: shop } = await supabase.from("barbershops").select("name, address, phone").eq("owner_id", ownerId).maybeSingle();
+    generateComandaReceiptPDF({
+      shopName: shop?.name || "Barbearia", shopAddress: shop?.address || undefined, shopPhone: shop?.phone || undefined,
+      clientName: c.customer_name, receiptId: c.id, items: its,
+    });
+    toast.success("Comanda fechada, lançada no financeiro e cupom gerado!");
     load(); onChange();
   };
 
