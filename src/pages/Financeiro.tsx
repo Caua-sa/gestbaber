@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw, Ban } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2, Crown, RefreshCw, Ban, Search, Percent, Receipt, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export default function Financeiro() {
 
   const fetchTransactions = async () => {
     if (!ownerId) return;
-    const { data } = await supabase.from("transactions").select("*").eq("owner_id", ownerId).order("transaction_date", { ascending: false }).limit(100);
+    const { data } = await supabase.from("transactions").select("*").eq("owner_id", ownerId).order("transaction_date", { ascending: false }).limit(2000);
     if (data) setTransactions(data);
     setLoading(false);
   };
@@ -115,9 +116,61 @@ export default function Financeiro() {
     return () => { supabase.removeChannel(ch); };
   }, [ownerId]);
 
-  const totalReceita = transactions.filter(t => t.type === "entrada").reduce((s, t) => s + Number(t.value), 0);
-  const totalDespesas = transactions.filter(t => t.type === "saída").reduce((s, t) => s + Number(t.value), 0);
+  const [period, setPeriod] = useState<"mes" | "anterior" | "30" | "ano" | "tudo">("mes");
+  const [typeFilter, setTypeFilter] = useState<"todos" | "entrada" | "saída">("todos");
+  const [search, setSearch] = useState("");
+
+  const range = useMemo(() => {
+    const now = new Date(); const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const len = (a: Date, b: Date) => b.getTime() - a.getTime();
+    let start: Date, end = new Date(now);
+    if (period === "mes") start = new Date(now.getFullYear(), now.getMonth(), 1);
+    else if (period === "anterior") { start = new Date(now.getFullYear(), now.getMonth() - 1, 1); end = new Date(now.getFullYear(), now.getMonth(), 0); }
+    else if (period === "30") { start = new Date(now); start.setDate(start.getDate() - 29); }
+    else if (period === "ano") start = new Date(now.getFullYear(), 0, 1);
+    else return { from: "0000-01-01", to: "9999-12-31", prevFrom: "", prevTo: "" };
+    const prevEnd = new Date(start); prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevStart = new Date(prevEnd.getTime() - len(start, end));
+    return { from: iso(start), to: iso(end), prevFrom: iso(prevStart), prevTo: iso(prevEnd) };
+  }, [period]);
+
+  const inRange = transactions.filter(t => t.transaction_date >= range.from && t.transaction_date <= range.to);
+  const prevRange = range.prevFrom ? transactions.filter(t => t.transaction_date >= range.prevFrom && t.transaction_date <= range.prevTo) : [];
+  const sum = (arr: Transaction[], ty: string) => arr.filter(t => t.type === ty).reduce((s, t) => s + Number(t.value), 0);
+  const totalReceita = sum(inRange, "entrada");
+  const totalDespesas = sum(inRange, "saída");
   const lucro = totalReceita - totalDespesas;
+  const prevReceita = sum(prevRange, "entrada");
+  const prevLucro = prevReceita - sum(prevRange, "saída");
+  const margem = totalReceita > 0 ? (lucro / totalReceita) * 100 : 0;
+  const nEntradas = inRange.filter(t => t.type === "entrada").length;
+  const ticket = nEntradas ? totalReceita / nEntradas : 0;
+  const delta = (cur: number, prev: number) => (prev ? ((cur - prev) / Math.abs(prev)) * 100 : null);
+  const mrr = subs.filter(s => !(s.status === "cancelado" || s.mp_status === "cancelled")).reduce((a, s) => a + s.plan_price, 0);
+
+  const chartData = useMemo(() => {
+    const map = new Map<string, { d: string; entrada: number; saida: number }>();
+    [...inRange].sort((a, b) => a.transaction_date.localeCompare(b.transaction_date)).forEach(t => {
+      const key = period === "ano" || period === "tudo" ? t.transaction_date.slice(0, 7) : t.transaction_date;
+      const row = map.get(key) || { d: key, entrada: 0, saida: 0 };
+      if (t.type === "entrada") row.entrada += Number(t.value); else row.saida += Number(t.value);
+      map.set(key, row);
+    });
+    return Array.from(map.values()).map(r => ({ ...r, label: r.d.length === 7 ? `${r.d.slice(5)}/${r.d.slice(2, 4)}` : `${r.d.slice(8)}/${r.d.slice(5, 7)}` }));
+  }, [inRange, period]);
+
+  const byCategory = (ty: string) => {
+    const m = new Map<string, number>();
+    inRange.filter(t => t.type === ty).forEach(t => m.set(t.category || "Outros", (m.get(t.category || "Outros") || 0) + Number(t.value)));
+    const total = Array.from(m.values()).reduce((a, b) => a + b, 0) || 1;
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).map(([name, v]) => ({ name, v, pct: (v / total) * 100 }));
+  };
+  const catIn = byCategory("entrada");
+  const catOut = byCategory("saída");
+
+  const visible = inRange.filter(t =>
+    (typeFilter === "todos" || t.type === typeFilter) &&
+    (!search.trim() || `${t.description} ${t.category} ${t.notes || ""}`.toLowerCase().includes(search.trim().toLowerCase())));
 
   const openCreate = () => {
     setEditing(null);
@@ -174,18 +227,93 @@ export default function Financeiro() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-4xl font-display gold-text">Financeiro</h1>
           <p className="text-muted-foreground text-sm mt-1">Receitas, despesas e fluxo de caixa</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" /> Nova Transação</Button>
+        <div className="flex gap-2 flex-wrap">
+          <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
+            <SelectTrigger className="w-[170px] bg-secondary border-border"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mes">Este mês</SelectItem>
+              <SelectItem value="anterior">Mês passado</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+              <SelectItem value="ano">Este ano</SelectItem>
+              <SelectItem value="tudo">Tudo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" /> Nova Transação</Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Receita Total" value={fmt(totalReceita)} icon={TrendingUp} index={0} />
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-6">
+        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Lucro líquido no período</p>
+        <div className="flex items-end gap-4 flex-wrap mt-1">
+          <span className={`font-display text-5xl ${lucro >= 0 ? "gold-text" : "text-destructive"}`}>{fmt(lucro)}</span>
+          {delta(lucro, prevLucro) !== null && (
+            <span className={`flex items-center gap-1 text-sm mb-2 ${delta(lucro, prevLucro)! >= 0 ? "text-success" : "text-destructive"}`}>
+              {delta(lucro, prevLucro)! >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+              {Math.abs(delta(lucro, prevLucro)!).toFixed(0)}% vs período anterior
+            </span>
+          )}
+        </div>
+        <div className="mt-4 h-2 rounded-full bg-secondary overflow-hidden flex">
+          <div className="bg-success h-full transition-all" style={{ width: `${totalReceita + totalDespesas ? (totalReceita / (totalReceita + totalDespesas)) * 100 : 50}%` }} />
+          <div className="bg-destructive h-full flex-1" />
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
+          <span>Entradas {fmt(totalReceita)}</span><span>Saídas {fmt(totalDespesas)}</span>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard title="Receita" value={fmt(totalReceita)} icon={TrendingUp} index={0} />
         <StatCard title="Despesas" value={fmt(totalDespesas)} icon={TrendingDown} index={1} />
-        <StatCard title="Lucro Líquido" value={fmt(lucro)} icon={DollarSign} index={2} />
+        <StatCard title="Margem" value={`${margem.toFixed(1)}%`} icon={Percent} index={2} />
+        <StatCard title="Ticket médio" value={fmt(ticket)} icon={Receipt} index={3} />
+        <StatCard title="Assinaturas/mês" value={fmt(mrr)} icon={Crown} index={4} />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+          <h2 className="font-display text-xl tracking-wide mb-4">Fluxo de caixa</h2>
+          {chartData.length === 0 ? (
+            <p className="text-muted-foreground text-center py-16 text-sm">Sem movimentações no período.</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.5} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="gOut" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} /></linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} width={60} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} formatter={(v: number) => fmt(v)} />
+                  <Area type="monotone" dataKey="entrada" name="Entradas" stroke="hsl(var(--success))" fill="url(#gIn)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="saida" name="Saídas" stroke="hsl(var(--destructive))" fill="url(#gOut)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+          {[{ t: "De onde vem o dinheiro", d: catIn, c: "bg-success" }, { t: "Para onde vai", d: catOut, c: "bg-destructive" }].map(g => (
+            <div key={g.t}>
+              <h3 className="font-display text-lg tracking-wide mb-2">{g.t}</h3>
+              {g.d.length === 0 ? <p className="text-xs text-muted-foreground">Nada no período.</p> : g.d.slice(0, 5).map(c => (
+                <div key={c.name} className="mb-2">
+                  <div className="flex justify-between text-xs mb-1"><span>{c.name}</span><span className="text-muted-foreground">{fmt(c.v)} · {c.pct.toFixed(0)}%</span></div>
+                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${c.pct}%` }} className={`h-full ${g.c}`} /></div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
@@ -254,19 +382,30 @@ export default function Financeiro() {
       </div>
 
       <div className="bg-card border border-border rounded-lg p-5">
-        <h2 className="font-display text-xl mb-4 tracking-wide">Transações</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h2 className="font-display text-xl tracking-wide">Transações <span className="text-sm text-muted-foreground font-sans">({visible.length})</span></h2>
+          <div className="flex gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..." className="pl-8 h-9 w-44 bg-secondary border-border" />
+            </div>
+            {(["todos", "entrada", "saída"] as const).map(f => (
+              <Button key={f} size="sm" variant={typeFilter === f ? "default" : "outline"} onClick={() => setTypeFilter(f)} className="h-9 capitalize">{f === "todos" ? "Todos" : f === "entrada" ? "Entradas" : "Saídas"}</Button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <p className="text-muted-foreground text-center py-8">Carregando...</p>
-        ) : transactions.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">Nenhuma transação cadastrada.</p>
+        ) : visible.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">Nenhuma transação neste filtro.</p>
         ) : (
-          <div className="space-y-2">
-            {transactions.map((t, i) => (
+          <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+            {visible.map((t, i) => (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.03 }}
+                transition={{ delay: Math.min(i, 15) * 0.03 }}
                 className="flex items-center justify-between py-3 px-3 border-b border-border/50 last:border-0 hover:bg-secondary/30 rounded transition-colors"
               >
                 <div className="flex-1 min-w-0">
