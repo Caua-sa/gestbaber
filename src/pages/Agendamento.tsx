@@ -257,13 +257,13 @@ export default function Agendamento() {
   const startService = async (app: Appointment, clientName: string) => {
     if (!ownerId) return;
     const { data: ex } = await supabase.from("comandas").select("id").eq("appointment_id", app.id).eq("status", "aberta").maybeSingle();
-    if (ex) { toast.info("Este corte já tem uma comanda aberta em Estoque → Conveniência"); return; }
+    if (ex) { toast.info("Este corte já tem uma comanda aberta em Vendas → Comandas"); return; }
     const { data: c, error } = await supabase.from("comandas")
       .insert({ owner_id: ownerId, customer_name: `${clientName} — ${app.appointment_time?.slice(0, 5)}`, appointment_id: app.id })
       .select("id").single();
     if (error || !c) { toast.error(error?.message || "Erro ao abrir comanda"); return; }
     await supabase.from("comanda_items").insert({ comanda_id: c.id, owner_id: ownerId, product_id: null, name: app.service, unit_price: Number(app.price || 0), quantity: 1 });
-    toast.success("Corte iniciado! Comanda aberta — adicione bebidas ou fichas de sinuca em Estoque → Conveniência.");
+    toast.success("Corte iniciado! Comanda aberta — adicione bebidas ou fichas de sinuca em Vendas → Comandas.");
   };
 
   const handleDelete = async (id: string) => {

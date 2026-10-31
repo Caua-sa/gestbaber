@@ -42,6 +42,7 @@ import ShortRedirect from "./pages/ShortRedirect";
 import AdminLinks from "./pages/admin/AdminLinks";
 import AdminLoginsClientes from "./pages/admin/AdminLoginsClientes";
 import NotFound from "./pages/NotFound";
+import { VendasHub, EstoqueHub, BarbeirosHub } from "@/pages/Hubs";
 import { PasswordGate } from "./components/PasswordGate";
 
 const queryClient = new QueryClient();
@@ -96,18 +97,18 @@ const App = () => (
             <Route path="/agendamento" element={<ProtectedAdminRoute><AppLayout><Agendamento /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/assinaturas" element={<ProtectedAdminRoute><AppLayout><Assinaturas /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/financeiro" element={<ProtectedAdminRoute><AppLayout><Financeiro /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/estoque" element={<ProtectedAdminRoute><AppLayout><Estoque /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/vendas" element={<ProtectedAdminRoute><AppLayout><Vendas /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/estoque" element={<ProtectedAdminRoute><AppLayout><EstoqueHub /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/vendas" element={<ProtectedAdminRoute><AppLayout><VendasHub /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/landing" element={<ProtectedAdminRoute><AppLayout><AdminLanding /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/banner-ia" element={<ProtectedAdminRoute><AppLayout><AdminBannerAI /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/usuarios" element={<ProtectedAdminRoute><AppLayout><AdminUsuarios /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/controle-acessos" element={<ProtectedAdminRoute><AppLayout><AdminUsuarios /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/mercado-pago" element={<ProtectedAdminRoute><AppLayout><AdminMercadoPago /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/barbearia" element={<ProtectedAdminRoute><AppLayout><AdminBarbearia /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/admin/barbeiros" element={<ProtectedAdminRoute><AppLayout><AdminBarbeiros /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/barbeiros" element={<ProtectedAdminRoute><AppLayout><BarbeirosHub /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/servicos" element={<ProtectedAdminRoute><AppLayout><AdminServicos /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/admin/ganhos-barbeiros" element={<ProtectedAdminRoute><AppLayout><AdminGanhosBarbeiros /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/admin/insumos" element={<ProtectedAdminRoute><AppLayout><AdminInsumos /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/ganhos-barbeiros" element={<ProtectedAdminRoute><AppLayout><BarbeirosHub initial="ganhos" /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/insumos" element={<ProtectedAdminRoute><AppLayout><EstoqueHub initial="insumos" /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/clientes" element={<ProtectedAdminRoute><AppLayout><AdminClientes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/extensao" element={<ProtectedAdminRoute><AppLayout><AdminExtensao /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AppLayout><AdminWhatsApp /></AppLayout></ProtectedAdminRoute>} />
@@ -116,7 +117,7 @@ const App = () => (
             <Route path="/agendar/:slug" element={<AgendarRapido />} />
             <Route path="/l/:code" element={<ShortRedirect />} />
             <Route path="/admin/links" element={<ProtectedAdminRoute><AppLayout><AdminLinks /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/admin/logins" element={<ProtectedAdminRoute><AppLayout><AdminLoginsClientes /></AppLayout></ProtectedAdminRoute>} />
+            <Route path="/admin/logins" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
