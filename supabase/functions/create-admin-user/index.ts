@@ -7,6 +7,9 @@ const corsHeaders = {
 
 const normalizeRole = (role?: string) => role === "admin" ? "admin" : "user";
 
+const friendly = (m: string) => /already (been )?registered|already exists/i.test(m)
+  ? "Este e-mail já está cadastrado. Use outro e-mail ou procure o cliente na lista."
+  : /password/i.test(m) ? "Senha fraca ou inválida. Use pelo menos 6 caracteres, sem senhas comuns." : m;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -75,8 +78,8 @@ Deno.serve(async (req) => {
       });
 
       if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 400,
+        return new Response(JSON.stringify({ error: friendly(createError.message) }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -203,8 +206,8 @@ Deno.serve(async (req) => {
       if (Object.keys(attrs).length) {
         const { error: updateError } = await adminClient.auth.admin.updateUserById(user_id, attrs);
         if (updateError) {
-          return new Response(JSON.stringify({ error: updateError.message }), {
-            status: 400,
+          return new Response(JSON.stringify({ error: friendly(updateError.message) }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
