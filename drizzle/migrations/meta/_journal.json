@@ -71,6 +71,13 @@
       "when": 1793365554837,
       "tag": "0009_comanda_appointment_link",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793450887265,
+      "tag": "0010_appointments_bloqueado_status",
+      "breakpoints": true
     }
   ]
 }

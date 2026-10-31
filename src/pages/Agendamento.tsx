@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText, Bell, Volume2, VolumeX, UserPlus } from "lucide-react";
+import { Clock, Plus, Trash2, User, Scissors, Phone, CalendarDays, ChevronLeft, ChevronRight, CheckCircle2, Loader2, Zap, FileText, Bell, Volume2, VolumeX, UserPlus, Lock } from "lucide-react";
 import { generateReceiptPDF } from "@/lib/receipt";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -36,6 +36,7 @@ const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
   confirmado: { label: "Confirmado", classes: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
   cancelado:  { label: "Cancelado",  classes: "bg-rose-500/10 text-rose-400 border-rose-500/30 line-through" },
   concluido:  { label: "Concluído",  classes: "bg-primary/10 text-primary border-primary/30" },
+  bloqueado:  { label: "Fechado",    classes: "bg-muted text-muted-foreground border-border" },
 };
 
 function parseNote(notes: string | null) {
@@ -84,6 +85,41 @@ export default function Agendamento() {
   const [form, setForm] = useState({ client_name: "", client_phone: "", service_id: "", barber_id: "", appointment_time: "", notes: "" });
   const [walk, setWalk] = useState({ client_name: "", service_id: "", barber_id: "", date: "", time: "" });
 
+  const [clientList, setClientList] = useState<{ user_id: string; full_name: string; phone: string | null }[]>([]);
+  const [clientUserId, setClientUserId] = useState<string | null>(null);
+  const [showSugg, setShowSugg] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [block, setBlock] = useState<{ barber_id: string; times: string[]; reason: string }>({ barber_id: "all", times: [], reason: "" });
+  useEffect(() => {
+    if (!open || clientList.length) return;
+    supabase.functions.invoke("admin-list-clients").then(({ data }) => setClientList((data?.clients || []) as any));
+  }, [open]);
+  const suggestions = useMemo(() => {
+    const q = form.client_name.trim().toLowerCase();
+    if (q.length < 2 || clientUserId) return [];
+    const qd = q.replace(/\D/g, "");
+    return clientList.filter(c => (c.full_name || "").toLowerCase().includes(q) || (qd.length >= 3 && (c.phone || "").replace(/\D/g, "").includes(qd))).slice(0, 6);
+  }, [form.client_name, clientList, clientUserId]);
+  const handleBlock = async () => {
+    if (!user || !ownerId || block.times.length === 0) return;
+    const targets = block.barber_id === "all" ? barbers : barbers.filter(b => b.id === block.barber_id);
+    if (targets.length === 0) { toast.error("Cadastre um barbeiro primeiro"); return; }
+    const rows = targets.flatMap(b => block.times
+      .filter(t => !appointments.some(a => a.status !== "cancelado" && (a as any).barber_id === b.id && a.appointment_time?.slice(0, 5) === t))
+      .map(t => ({
+        user_id: user.id, owner_id: ownerId, barbershop_id: shopId, service: "Horário fechado", price: 0,
+        barber: b.name, barber_id: b.id, appointment_date: dateISO, appointment_time: t,
+        status: "bloqueado", notes: `Fechado||||${block.reason}`,
+      })));
+    if (rows.length === 0) { toast.error("Esses horários já estão ocupados"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("appointments").insert(rows);
+    setSaving(false);
+    if (error) { toast.error("Erro: " + error.message); return; }
+    toast.success(`${rows.length} horário(s) fechado(s)`);
+    setBlockOpen(false); setBlock({ barber_id: "all", times: [], reason: "" });
+    fetchAppointments();
+  };
   const [shopInfo, setShopInfo] = useState<{ name: string; address: string | null; phone: string | null } | null>(null);
 
   const dateISO = useMemo(() => toISO(selectedDate), [selectedDate]);
@@ -246,18 +282,23 @@ export default function Agendamento() {
     if (!svc) { toast.error("Escolha um serviço"); return; }
     setSaving(true);
     const notes = `${form.client_name}||${form.client_phone}||${form.notes}`;
-    const { error } = await supabase.from("appointments").insert({
-      user_id: user.id, owner_id: ownerId, barbershop_id: shopId,
+    const base = {
+      owner_id: ownerId, barbershop_id: shopId,
       service: svc.name, price: svc.price,
       barber: brb?.name || "Barbeiro", barber_id: brb?.id || null,
       appointment_date: dateISO, appointment_time: form.appointment_time,
       status: "confirmado", notes,
-    });
+    };
+    let { error } = await supabase.from("appointments").insert({ ...base, user_id: clientUserId || user.id });
+    if (error && clientUserId && !/reservado/i.test(error.message)) {
+      ({ error } = await supabase.from("appointments").insert({ ...base, user_id: user.id }));
+    }
     setSaving(false);
     if (error) { toast.error("Erro: " + error.message); return; }
     toast.success("Agendamento criado!");
     setOpen(false);
     setForm({ client_name: "", client_phone: "", service_id: "", barber_id: "", appointment_time: "", notes: "" });
+    setClientUserId(null);
     fetchAppointments();
   };
 
@@ -388,6 +429,55 @@ export default function Agendamento() {
             </DialogContent>
           </Dialog>
 
+          <Dialog open={blockOpen} onOpenChange={setBlockOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Lock className="mr-2 h-4 w-4" /> Fechar horários</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-display text-2xl gold-text">Fechar agenda</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <p className="text-xs text-muted-foreground capitalize">{formatDateLong(selectedDate)}</p>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Barbeiro</label>
+                  <Select value={block.barber_id} onValueChange={(v) => setBlock({ ...block, barber_id: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os barbeiros</SelectItem>
+                      {barbers.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs text-muted-foreground">Horários a fechar</label>
+                    <button type="button" className="text-xs text-primary" onClick={() => setBlock({ ...block, times: block.times.length === TIME_SLOTS.length ? [] : [...TIME_SLOTS] })}>
+                      {block.times.length === TIME_SLOTS.length ? "Limpar" : "Dia inteiro"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
+                    {TIME_SLOTS.map(t => {
+                      const sel = block.times.includes(t);
+                      return (
+                        <button key={t} type="button"
+                          onClick={() => setBlock({ ...block, times: sel ? block.times.filter(x => x !== t) : [...block.times, t] })}
+                          className={cn("py-1.5 rounded-md text-xs font-medium border transition-all",
+                            sel ? "bg-destructive text-destructive-foreground border-destructive" : "bg-secondary border-border hover:border-primary/50")}
+                        >{t}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <Input value={block.reason} onChange={(e) => setBlock({ ...block, reason: e.target.value })} placeholder="Motivo (opcional)" />
+                <p className="text-xs text-muted-foreground">Para reabrir um horário, apague-o da lista do dia.</p>
+                <Button className="w-full gold-gradient text-primary-foreground" disabled={saving || block.times.length === 0} onClick={handleBlock}>
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Fechar {block.times.length} horário(s)
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gold-gradient text-primary-foreground shadow-lg" disabled={noServices}>
@@ -400,9 +490,22 @@ export default function Agendamento() {
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4 mt-2">
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Cliente *</label>
-                    <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} required />
+                  <div className="relative">
+                    <label className="text-xs text-muted-foreground mb-1 block">Cliente * {clientUserId && <span className="text-primary">· cadastrado</span>}</label>
+                    <Input value={form.client_name} autoComplete="off" placeholder="Digite o nome..."
+                      onFocus={() => setShowSugg(true)} onBlur={() => setTimeout(() => setShowSugg(false), 150)}
+                      onChange={(e) => { setClientUserId(null); setForm({ ...form, client_name: e.target.value }); }} required />
+                    {showSugg && suggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 mt-1 rounded-md border border-border bg-popover shadow-lg max-h-48 overflow-y-auto">
+                        {suggestions.map(c => (
+                          <button key={c.user_id} type="button" className="w-full text-left px-3 py-2 text-sm hover:bg-secondary"
+                            onMouseDown={(e) => { e.preventDefault(); setClientUserId(c.user_id); setForm({ ...form, client_name: c.full_name, client_phone: c.phone || form.client_phone }); setShowSugg(false); }}>
+                            <div className="font-medium">{c.full_name}</div>
+                            {c.phone && <div className="text-xs text-muted-foreground">{c.phone}</div>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Telefone</label>
@@ -564,14 +667,14 @@ export default function Agendamento() {
                           <Scissors className="h-3.5 w-3.5" /> Iniciar corte
                         </Button>
                       )}
-                      {isGuest && (
+                      {isGuest && app.status !== "bloqueado" && (
                         <Button variant="outline" size="sm" disabled={savingClient} onClick={() => saveAsClient(app, { full_name: note.name, phone: note.phone, email: "", password: "" })} className="h-8 gap-1.5">
                           <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
+                      {app.status !== "bloqueado" && <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
                         <Bell className="h-3.5 w-3.5" /> Avisar
-                      </Button>
+                      </Button>}
                       <Select value={app.status} onValueChange={(v) => handleStatusChange(app, v)}>
                         <SelectTrigger className="w-[130px] bg-secondary border-border text-xs h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
