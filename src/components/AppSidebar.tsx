@@ -21,13 +21,10 @@ const menuItems = [
   { title: "Clientes", url: "/admin/clientes", icon: Users },
   { title: "Barbeiros", url: "/admin/barbeiros", icon: Scissors },
   { title: "Cortes & Preços", url: "/admin/servicos", icon: Scissors },
-  { title: "Ganhos Barbeiros", url: "/admin/ganhos-barbeiros", icon: TrendingUp },
   { title: "Assinaturas", url: "/assinaturas", icon: Crown },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Estoque", url: "/estoque", icon: Package },
-  { title: "Insumos", url: "/admin/insumos", icon: Boxes },
   { title: "Vendas", url: "/vendas", icon: ShoppingCart },
-  { title: "Logins Clientes", url: "/admin/logins", icon: LogIn },
   { title: "Notificações", url: "/admin/notificacoes", icon: Bell },
   { title: "Controle de Acesso", url: "/admin/controle-acesso", icon: ShieldCheck },
 ];

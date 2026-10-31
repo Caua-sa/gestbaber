@@ -14,7 +14,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { toast } from "sonner";
 import { Construction } from "lucide-react";
-import { Comandas } from "@/components/estoque/Comandas";
 
 const FOOD = ["bebida", "bebidas", "comida", "comidas", "snack", "snacks", "doce", "doces", "lanche", "lanches", "conveniência", "conveniencia", "alimento", "alimentos", "refrigerante", "cerveja", "bala", "balas"];
 export const isFood = (c: string) => FOOD.includes((c || "").trim().toLowerCase());
@@ -136,19 +135,7 @@ export default function Estoque() {
             <StatCard title="Valor em Estoque" value={fmt(totalValue)} icon={Package} index={2} />
           </div>
 
-          {tab === "conveniencia" && user && ownerId && (
-            <>
-              <Comandas ownerId={ownerId} userId={user.id} products={list.filter(p => p.stock > 0) as any} onChange={fetchProducts} />
-              <div className="bg-card border border-dashed border-primary/40 rounded-lg p-4 flex items-center gap-3">
-                <Construction className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="font-medium">Controle de mesa de sinuca</p>
-                  <p className="text-xs text-muted-foreground">Em construção — em breve você poderá controlar tempo e valor das mesas.</p>
-                </div>
-              </div>
-              <h2 className="font-display text-2xl">Produtos da conveniência</h2>
-            </>
-          )}
+          {tab === "conveniencia" && <h2 className="font-display text-2xl">Produtos da conveniência</h2>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map((p, i) => {
