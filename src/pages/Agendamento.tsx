@@ -667,14 +667,14 @@ export default function Agendamento() {
                           <Scissors className="h-3.5 w-3.5" /> Iniciar corte
                         </Button>
                       )}
-                      {isGuest && (
+                      {isGuest && app.status !== "bloqueado" && (
                         <Button variant="outline" size="sm" disabled={savingClient} onClick={() => saveAsClient(app, { full_name: note.name, phone: note.phone, email: "", password: "" })} className="h-8 gap-1.5">
                           <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
+                      {app.status !== "bloqueado" && <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
                         <Bell className="h-3.5 w-3.5" /> Avisar
-                      </Button>
+                      </Button>}
                       <Select value={app.status} onValueChange={(v) => handleStatusChange(app, v)}>
                         <SelectTrigger className="w-[130px] bg-secondary border-border text-xs h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
