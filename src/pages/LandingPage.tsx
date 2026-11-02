@@ -57,6 +57,13 @@ export default function LandingPage() {
   const [servicesExpanded, setServicesExpanded] = useState(false);
 
   useEffect(() => {
+    if (!document.querySelector('link[data-barber-fonts]')) {
+      const fonts = document.createElement("link");
+      fonts.rel = "stylesheet";
+      fonts.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap";
+      fonts.dataset.barberFonts = "true";
+      document.head.appendChild(fonts);
+    }
     (async () => {
       const stored = (() => {
         try { return JSON.parse(localStorage.getItem(SHOP_KEY) || "{}"); } catch { return {}; }
