@@ -55,7 +55,7 @@ export function AppSidebar() {
         <div className="p-4 flex items-center gap-3">
           <Scissors className="h-7 w-7 text-primary shrink-0" />
           {!collapsed && (
-            <span className="font-display text-2xl gold-text tracking-wider">BARBER PRO</span>
+            <span className="font-display text-2xl gold-text tracking-wider">GESTBARBER</span>
           )}
         </div>
 

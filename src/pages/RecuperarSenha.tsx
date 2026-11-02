@@ -112,7 +112,7 @@ export default function RecuperarSenha() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
           <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />
-          <h1 className="text-4xl font-display gold-text">BARBER PRO</h1>
+          <h1 className="text-4xl font-display gold-text">GESTBARBER</h1>
           <p className="text-muted-foreground text-sm mt-1">Recuperação de senha</p>
         </div>
 

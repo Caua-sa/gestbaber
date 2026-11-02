@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     await admin.from("signup_otps").insert({ phone: p, code, full_name: full_name || null });
 
-    const send = await sendWhatsapp(ownerId, admin, p, `🔐 Seu código de confirmação Barber Pro: *${code}*\nVálido por 10 minutos.`);
+    const send = await sendWhatsapp(ownerId, admin, p, `🔐 Seu código de confirmação GestBarber: *${code}*\nVálido por 10 minutos.`);
     if (!send.ok) throw new Error(send.error || "Falha ao enviar WhatsApp");
 
     return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

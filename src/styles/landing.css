@@ -45,4 +45,10 @@
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .public-landing * { animation: none !important; transition: none !important; }
-}
+}.public-flow { font-family: Inter, sans-serif; background: radial-gradient(ellipse at top, hsl(var(--primary) / .08), transparent 55%), hsl(var(--background)); }
+.public-flow h1, .public-flow h2, .public-flow h3 { font-family: "Bebas Neue", sans-serif; letter-spacing: .04em; }
+.public-flow .rounded-2xl, .public-flow .rounded-xl { border-radius: 8px; }
+.public-flow .rounded-lg { border-radius: 6px; }
+.public-flow [class*="bg-card"] { background: hsl(var(--card) / .92); border-color: hsl(var(--border)); box-shadow: 0 24px 60px -30px hsl(0 0% 0% / .8); }
+.public-flow button { text-transform: none; }
+.public-flow .gold-text { background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--gold-glow)), hsl(var(--primary))); -webkit-background-clip: text; background-clip: text; color: transparent; }

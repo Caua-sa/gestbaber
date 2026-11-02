@@ -1,3 +1,4 @@
+import "@/styles/landing.css";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -137,11 +138,11 @@ export default function AgendarRapido() {
     saveMine(); setDone(true);
   };
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><Scissors className="h-8 w-8 text-primary animate-spin" /></div>;
-  if (!shop) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Barbearia não encontrada.</div>;
+  if (loading) return <div className="public-landing public-flow min-h-screen bg-background flex items-center justify-center"><Scissors className="h-8 w-8 text-primary animate-spin" /></div>;
+  if (!shop) return <div className="public-landing public-flow min-h-screen bg-background flex items-center justify-center text-muted-foreground">Barbearia não encontrada.</div>;
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="public-landing public-flow min-h-screen bg-background relative overflow-hidden">
       <motion.div aria-hidden className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl"
         animate={{ x: [0, 60, 0], y: [0, 40, 0] }} transition={{ duration: 12, repeat: Infinity }} />
       <motion.div aria-hidden className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
