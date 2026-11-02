@@ -78,6 +78,13 @@
       "when": 1793450887265,
       "tag": "0010_appointments_bloqueado_status",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793583940964,
+      "tag": "0011_guest_booking_service_combos",
+      "breakpoints": true
     }
   ]
 }
