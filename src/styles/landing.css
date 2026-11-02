@@ -52,3 +52,6 @@
 .public-flow [class*="bg-card"] { background: hsl(var(--card) / .92); border-color: hsl(var(--border)); box-shadow: 0 24px 60px -30px hsl(0 0% 0% / .8); }
 .public-flow button { text-transform: none; }
 .public-flow .gold-text { background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--gold-glow)), hsl(var(--primary))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.public-flow .confirm-white { background: hsl(0 0% 100%); color: hsl(0 0% 6%); }
+.public-flow .confirm-white:hover { background: hsl(0 0% 86%); }
+.public-flow .confirm-white:disabled { opacity: .55; }
