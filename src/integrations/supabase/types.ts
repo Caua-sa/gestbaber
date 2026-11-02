@@ -291,6 +291,7 @@ export type Database = {
           preferred_date: string | null
           preferred_time: string | null
           service: string | null
+          service_ids: string[]
           status: string
         }
         Insert: {
@@ -306,6 +307,7 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           service?: string | null
+          service_ids?: string[]
           status?: string
         }
         Update: {
@@ -321,6 +323,7 @@ export type Database = {
           preferred_date?: string | null
           preferred_time?: string | null
           service?: string | null
+          service_ids?: string[]
           status?: string
         }
         Relationships: [
