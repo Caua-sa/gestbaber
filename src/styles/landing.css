@@ -1,0 +1,48 @@
+.public-landing {
+  --primary: 38 48% 58%;
+  --primary-foreground: 0 0% 8%;
+  --ring: 38 48% 58%;
+  --gold-glow: 38 55% 66%;
+  --hero-foreground: 0 0% 98%;
+  --hero-muted: 0 0% 81%;
+  --hero-shade: 0 0% 3%;
+  --hero-overlay: linear-gradient(90deg, hsl(var(--hero-shade) / .94) 0%, hsl(var(--hero-shade) / .72) 32%, hsl(var(--hero-shade) / .15) 70%), linear-gradient(0deg, hsl(var(--hero-shade) / .5), transparent 30%);
+  letter-spacing: 0;
+}
+.dark .public-landing {
+  --background: 0 0% 5%;
+  --foreground: 0 0% 93%;
+  --secondary: 0 0% 12%;
+  --card: 0 0% 9%;
+  --muted-foreground: 0 0% 63%;
+  --border: 0 0% 18%;
+}
+.landing-container { width: min(1160px, 100% - 64px); margin-inline: auto; }
+.landing-section { padding-block: 64px; }
+.public-landing h1, .public-landing h2, .public-landing h3 { letter-spacing: 0; }
+.landing-hero { min-height: 470px; color: hsl(var(--hero-foreground)); }
+.landing-hero-shade { background: var(--hero-overlay); }
+.landing-hero-copy { color: hsl(var(--hero-muted)); }
+.landing-hero-secondary { border-color: hsl(var(--hero-foreground) / .25); color: hsl(var(--hero-foreground)); background: hsl(var(--hero-shade) / .25); }
+.landing-hero-secondary:hover { background: hsl(var(--hero-shade) / .6); color: hsl(var(--hero-foreground)); }
+.landing-eyebrow { color: hsl(var(--primary)); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px; }
+.landing-service { background: hsl(var(--secondary) / .4); border-radius: 6px; }
+.landing-service:hover { border-color: hsl(var(--primary)); background: hsl(var(--primary) / .06); }
+.landing-plan { background: hsl(var(--card)); }
+#root .public-landing button, #root .public-landing a.inline-flex { border-radius: 5px; }
+#root .public-landing button.bg-primary, #root .public-landing a.bg-primary { background-image: none; box-shadow: none; }
+.public-landing a { transition: color .2s ease; }
+.public-landing footer a:hover { color: hsl(var(--primary)); }
+@media (min-width: 1600px) { .landing-hero { min-height: 540px; } }
+@media (max-width: 767px) {
+  .landing-container { width: calc(100% - 36px); }
+  .landing-section { padding-block: 42px; }
+  .landing-hero { min-height: 500px; }
+  .landing-hero > img { object-position: 65% center; }
+  .landing-hero-shade { background: linear-gradient(90deg, hsl(var(--hero-shade) / .88), hsl(var(--hero-shade) / .4)), linear-gradient(0deg, hsl(var(--hero-shade) / .7), transparent); }
+  .landing-booking-aside { border-left: 0; border-top: 1px solid hsl(var(--border)); padding-left: 0; padding-top: 25px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .public-landing * { animation: none !important; transition: none !important; }
+}
