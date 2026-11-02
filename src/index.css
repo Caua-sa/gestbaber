@@ -303,18 +303,22 @@ html { scroll-behavior: smooth; }
 ::selection { background: hsl(var(--primary) / 0.35); }
 @media (prefers-reduced-motion: reduce) { #root * { transition: none !important; } }
 
-/* Reference style: pill buttons/tabs, gold active fill, soft dark cards */
-.admin-modern main button, .admin-modern main a.inline-flex { border-radius: 0.9rem; }
+/* Landing style: sharp 5px corners, gold active fill, clean dark cards */
+.admin-modern main button, .admin-modern main a.inline-flex { border-radius: 0.375rem; }
 .admin-modern main [role="tablist"] { background: transparent; gap: .5rem; padding: 0; overflow-x: auto; flex-wrap: nowrap; justify-content: flex-start; }
 .admin-modern main [role="tab"] {
-  border-radius: 0.9rem; border: 1px solid hsl(var(--border)); padding: .55rem 1.1rem;
+  border-radius: 0.375rem; border: 1px solid hsl(var(--border)); padding: .55rem 1.1rem;
   background: hsl(var(--card)); white-space: nowrap; transition: all .2s ease;
+  text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; font-weight: 600;
 }
 .admin-modern main [role="tab"][data-state="active"] {
   background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary));
-  box-shadow: 0 6px 20px -6px hsl(var(--primary) / 0.6);
+  box-shadow: 0 6px 20px -6px hsl(var(--primary) / 0.55);
 }
-.admin-modern main .bg-card { border-radius: 1.5rem; }
+.admin-modern main .bg-card { border-radius: 0.5rem; }
 .admin-modern main button[class*="destructive"][class*="outline"], .admin-modern main button.border-destructive {
   background: hsl(var(--destructive) / 0.08);
 }
+/* landing-style gold divider under section headers */
+.admin-modern main h1.font-display + p { color: hsl(var(--muted-foreground)); }
+.admin-modern main h2.font-display, .admin-modern main h3.font-display { letter-spacing: 0.05em; }
