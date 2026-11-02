@@ -145,21 +145,29 @@
 }
 
 /* Modern admin panel look (applies to every page inside the panel) */
+/* Landing-inspired palette: deep black + refined gold, sharp corners */
 .admin-modern {
+  --primary: 38 48% 58%;
+  --primary-foreground: 0 0% 8%;
+  --ring: 38 48% 58%;
+  --gold-glow: 38 55% 66%;
+  --accent: 38 48% 58%;
+  --accent-foreground: 0 0% 8%;
   background:
-    radial-gradient(60rem 30rem at 100% -10%, hsl(var(--primary) / 0.10), transparent 60%),
-    radial-gradient(40rem 25rem at -10% 110%, hsl(var(--primary) / 0.06), transparent 60%);
+    radial-gradient(60rem 30rem at 100% -10%, hsl(var(--primary) / 0.08), transparent 60%),
+    radial-gradient(40rem 25rem at -10% 110%, hsl(var(--primary) / 0.05), transparent 60%),
+    hsl(var(--background));
 }
 .admin-modern main .bg-card {
-  background-color: hsl(var(--card) / 0.75);
+  background-color: hsl(var(--card) / 0.85);
   backdrop-filter: blur(12px);
-  border-radius: 1rem;
-  box-shadow: 0 8px 30px -12px hsl(var(--primary) / 0.18);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 30px -12px hsl(var(--primary) / 0.15);
   transition: border-color .25s ease, transform .25s ease, box-shadow .25s ease;
 }
 .admin-modern main .bg-card:hover {
-  border-color: hsl(var(--primary) / 0.4);
-  box-shadow: 0 14px 40px -14px hsl(var(--primary) / 0.3);
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 14px 40px -14px hsl(var(--primary) / 0.28);
 }
 .admin-modern main h1.font-display {
   letter-spacing: 0.03em;
