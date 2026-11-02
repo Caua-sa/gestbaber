@@ -1,8 +1,8 @@
 import "@/styles/landing.css";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scissors, User, Calendar, Clock, Check, ArrowRight, ArrowLeft, Phone, Sparkles, ChevronDown } from "lucide-react";
+import { Scissors, User, CalendarDays, Clock, Check, ChevronRight, ChevronDown, ArrowLeft, Phone, Sparkles, ArrowUpRight, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,11 +16,15 @@ const SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","
 
 interface Shop { id: string; owner_id: string; name: string; logo_url: string | null; description: string | null }
 
+const reveal = { initial: { opacity: 0, y: 16 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.45 } };
+
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 export default function AgendarRapido() {
   const { slug } = useParams();
   const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
-  const [services, setServices] = useState<{ id: string; name: string; price: number }[]>([]);
+  const [services, setServices] = useState<{ id: string; name: string; price: number; duration_min: number | null }[]>([]);
   const [barbers, setBarbers] = useState<{ id: string; name: string; photo_url: string | null }[]>([]);
   const [step, setStep] = useState(0);
   const [serviceIds, setServiceIds] = useState<string[]>([]);
@@ -36,6 +40,9 @@ export default function AgendarRapido() {
   const [done, setDone] = useState(false);
   const [known, setKnown] = useState<string | null>(null);
   const [sessionUid, setSessionUid] = useState<string | null>(null);
+  const [servicesExpanded, setServicesExpanded] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       const uid = data.session?.user.id;
@@ -46,6 +53,7 @@ export default function AgendarRapido() {
       if (p?.phone) setPhone(p.phone);
     });
   }, []);
+
   const lookupPhone = async (v: string) => {
     const digits = v.replace(/\D/g, "");
     if (!shop || digits.length < 10) { setKnown(null); return; }
@@ -61,7 +69,7 @@ export default function AgendarRapido() {
       if (b) {
         setShop(b as Shop);
         const [{ data: s }, { data: br }] = await Promise.all([
-          supabase.from("services").select("id,name,price").eq("owner_id", b.owner_id).eq("active", true).order("name"),
+          supabase.from("services").select("id,name,price,duration_min").eq("owner_id", b.owner_id).eq("active", true).order("name"),
           supabase.from("barbers").select("id,name,photo_url").eq("owner_id", b.owner_id).eq("active", true).order("name"),
         ]);
         setServices((s || []).map((x: any) => ({ ...x, price: Number(x.price) })));
@@ -89,13 +97,12 @@ export default function AgendarRapido() {
     const d = new Date(); d.setDate(d.getDate() + i); return d;
   }), []);
 
-  const steps = ["Serviço", "Barbeiro", "Horário", "Seus dados"];
-  const canNext = [!!service, !!barber, !!date && !!time, name.trim().length > 1][step];
+  const steps = ["Serviços", "Barbeiro", "Data e horário", "Confirmar"];
+  const canNext = [combo.services.length > 0, !!barber, !!date && !!time, name.trim().length > 1][step];
 
   const storeKey = `agendar_${slug}`;
   const [mine, setMine] = useState<any[]>(() => { try { return JSON.parse(localStorage.getItem(`agendar_${slug}`) || "[]"); } catch { return []; } });
   const [mineStatus, setMineStatus] = useState<Record<string, string>>({});
-  const [openSvc, setOpenSvc] = useState(false);
   useEffect(() => {
     if (!shop || mine.length === 0) return;
     const load = async () => {
@@ -141,148 +148,233 @@ export default function AgendarRapido() {
   if (loading) return <div className="public-landing public-flow min-h-screen bg-background flex items-center justify-center"><Scissors className="h-8 w-8 text-primary animate-spin" /></div>;
   if (!shop) return <div className="public-landing public-flow min-h-screen bg-background flex items-center justify-center text-muted-foreground">Barbearia não encontrada.</div>;
 
+  const summary = [
+    combo.services.length > 0 && combo.name,
+    barber,
+    date && `${new Date(date + "T12:00").toLocaleDateString("pt-BR")}${time ? ` às ${time}` : ""}`,
+  ].filter(Boolean) as string[];
+
   return (
-    <div className="public-landing public-flow min-h-screen bg-background relative overflow-hidden">
-      <motion.div aria-hidden className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl"
+    <div className="public-landing public-flow min-h-screen bg-background text-foreground relative overflow-hidden">
+      <motion.div aria-hidden className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
         animate={{ x: [0, 60, 0], y: [0, 40, 0] }} transition={{ duration: 12, repeat: Infinity }} />
       <motion.div aria-hidden className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
         animate={{ x: [0, -50, 0], y: [0, -30, 0] }} transition={{ duration: 14, repeat: Infinity }} />
 
-      <div className="relative max-w-xl mx-auto px-4 py-10">
-        <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          {shop.logo_url ? (
-            <motion.img src={shop.logo_url} alt={shop.name} className="h-20 w-20 rounded-full object-cover mx-auto mb-3 ring-2 ring-primary/50"
-              initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring" }} />
-          ) : <Scissors className="h-12 w-12 text-primary mx-auto mb-3" />}
-          <h1 className="font-display text-5xl gold-text tracking-wide">{shop.name}</h1>
-          <p className="text-muted-foreground text-sm mt-1 flex items-center justify-center gap-1"><Sparkles className="h-3 w-3 text-primary" /> Agende em menos de 1 minuto — sem cadastro</p>
-        </motion.header>
+      <header className="landing-nav sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl">
+        <div className="landing-container flex min-h-20 items-center justify-between gap-4 py-3">
+          <Link to={`/site/${slug}`} className="flex min-w-0 items-center gap-3">
+            {shop.logo_url ? <img src={shop.logo_url} alt={shop.name} className="h-11 w-11 shrink-0 rounded-md object-cover" /> : <Scissors className="h-9 w-9 shrink-0 text-primary" />}
+            <span className="font-display text-2xl leading-none break-words">{shop.name}</span>
+          </Link>
+          <Button asChild variant="outline" className="border-primary/50 text-primary">
+            <Link to={sessionUid ? "/cliente" : "/cliente/login"}>{sessionUid ? "Meu portal" : "Entrar"} <ArrowUpRight className="ml-2 h-4 w-4" /></Link>
+          </Button>
+        </div>
+      </header>
+
+      <main className="relative landing-container py-10 md:py-14">
+        <motion.div {...reveal} className="mb-9 flex flex-wrap items-end justify-between gap-5">
+          <div>
+            <p className="landing-eyebrow"><Sparkles className="mr-2 inline h-3 w-3" />Agende em menos de 1 minuto</p>
+            <h1 className="font-display text-4xl md:text-6xl">Agende seu horário</h1>
+          </div>
+          <span className="text-xs text-muted-foreground">{shop.description || "Seu próximo corte começa aqui."}</span>
+        </motion.div>
+
+        <motion.div {...reveal} className="landing-steps mb-9 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {steps.map((label, i) => (
+            <div key={label} className="flex items-center gap-3">
+              <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm transition-colors",
+                i === step ? "border-primary bg-primary text-primary-foreground" : i < step ? "border-primary text-primary" : "border-border text-muted-foreground")}>
+                {i < step ? <Check className="h-4 w-4" /> : i + 1}
+              </span>
+              <span className={cn("text-sm", i === step ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+              {i < 3 && <span className="hidden h-px flex-1 bg-border md:block" />}
+            </div>
+          ))}
+        </motion.div>
 
         {done ? (
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-card/80 backdrop-blur border border-border rounded-2xl p-10 text-center">
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}
-              className="h-20 w-20 rounded-full gold-gradient mx-auto flex items-center justify-center mb-4">
+          <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="border border-primary/40 bg-card/80 backdrop-blur p-10 text-center" style={{ borderRadius: 8 }}>
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.15 }}
+              className="gold-gradient mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full">
               <Check className="h-10 w-10 text-primary-foreground" />
             </motion.div>
-            <h2 className="font-display text-3xl">Agendamento confirmado!</h2>
-            <p className="text-muted-foreground text-sm mt-2">Seu horário já está reservado. Acompanhe abaixo.</p>
+            <h2 className="font-display text-4xl">Agendamento confirmado!</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Seu horário já está reservado. Acompanhe abaixo.</p>
+            <Button variant="outline" className="mt-6" onClick={() => { setDone(false); setStep(0); setTime(""); }}>Fazer outro agendamento</Button>
           </motion.div>
         ) : (
-          <div className="bg-card/80 backdrop-blur border border-border rounded-2xl p-6 shadow-2xl">
-            <div className="flex gap-2 mb-6">
-              {steps.map((s, i) => (
-                <div key={s} className="flex-1">
-                  <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                    <motion.div className="h-full gold-gradient" initial={false} animate={{ width: i <= step ? "100%" : "0%" }} />
-                  </div>
-                  <p className={cn("text-[10px] mt-1 uppercase tracking-wider", i === step ? "text-primary" : "text-muted-foreground")}>{s}</p>
-                </div>
-              ))}
-            </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div key={step} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.25 }} className="min-h-[280px]">
-                {step === 0 && (
-                  <div className="grid gap-2">
-                    <Button variant="outline" type="button" aria-expanded={openSvc} onClick={() => setOpenSvc(o => !o)} className="h-auto min-h-14 whitespace-normal flex justify-between items-center p-4 rounded-xl border border-primary/40 bg-primary/5 font-medium text-left">
-                      <span className="flex min-w-0 items-center gap-2"><Scissors className="h-4 w-4 shrink-0 text-primary" /><span className="break-words">{service || "Escolha os serviços"}</span></span>
-                      <motion.span animate={{ rotate: openSvc ? 180 : 0 }}><ChevronDown className="h-5 w-5 text-primary" /></motion.span>
-                    </Button>
-                    <AnimatePresence initial={false}>{openSvc && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="grid gap-2 overflow-hidden">
-                    <BookingServicePicker services={services} value={serviceIds} onChange={setServiceIds} />
-                    </motion.div>)}</AnimatePresence>
-                    {!openSvc && combo.services.length > 0 && <p className="text-right font-semibold text-primary">{combo.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>}
-                  </div>
-                )}
-                {step === 1 && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {barbers.map((b, i) => (
-                      <motion.button key={b.id} type="button" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                        whileHover={{ y: -4 }} whileTap={{ scale: 0.96 }} onClick={() => setBarber(b.name)}
-                        className={cn("p-4 rounded-xl border flex flex-col items-center gap-2", barber === b.name ? "border-primary bg-primary/10" : "border-border bg-secondary/50")}>
-                        {b.photo_url ? <img src={b.photo_url} alt={b.name} className="h-14 w-14 rounded-full object-cover" /> :
-                          <div className="h-14 w-14 rounded-full bg-primary/15 flex items-center justify-center"><User className="h-6 w-6 text-primary" /></div>}
-                        <span className="text-sm font-medium text-center">{b.name}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-                {step === 2 && (
-                  <div className="space-y-4">
-                    <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-                      {days.map(d => {
-                        const v = d.toISOString().slice(0, 10);
-                        return (
-                          <motion.button key={v} type="button" whileTap={{ scale: 0.92 }} onClick={() => setDate(v)}
-                            className={cn("shrink-0 w-16 py-3 rounded-xl border text-center", date === v ? "border-primary gold-gradient text-primary-foreground" : "border-border bg-secondary/50")}>
-                            <p className="text-[10px] uppercase">{d.toLocaleDateString("pt-BR", { weekday: "short" })}</p>
-                            <p className="font-display text-2xl">{d.getDate()}</p>
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+            <div>
+              <AnimatePresence mode="wait">
+                <motion.div key={step} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }} className="min-h-[300px]">
+                  {step === 0 && (
+                    <div>
+                      <div className="mb-5 flex items-center gap-2"><Scissors className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Cortes & serviços</h2></div>
+                      {services.length === 0 ? <p className="text-muted-foreground">Nenhum serviço disponível no momento.</p> : (
+                        <>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {(servicesExpanded ? services : services.slice(0, 4)).map((s, i) => {
+                              const selected = serviceIds.includes(s.id);
+                              return (
+                                <motion.button key={s.id} type="button" {...reveal} transition={{ duration: 0.35, delay: (i % 4) * 0.04 }}
+                                  aria-pressed={selected} onClick={() => setServiceIds(sel => sel.includes(s.id) ? sel.filter(x => x !== s.id) : [...sel, s.id])}
+                                  className={cn("landing-service flex h-full min-h-24 w-full items-center justify-between gap-4 border p-5 text-left transition-colors",
+                                    selected ? "border-primary bg-primary/10" : "border-border")}>
+                                  <span className="min-w-0">
+                                    <span className="block break-words text-base font-medium">{s.name}</span>
+                                    <span className="mt-2 flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                                      {s.duration_min ? <><Clock className="h-3 w-3" />{s.duration_min} min</> : null}
+                                      {selected && <span className="flex items-center gap-1 text-primary"><Check className="h-3 w-3" />Selecionado</span>}
+                                    </span>
+                                  </span>
+                                  <span className="flex shrink-0 flex-col items-end gap-3">
+                                    <strong className="text-primary">{fmt(Number(s.price))}</strong>
+                                    {selected ? <Check className="h-4 w-4 text-primary" /> : <ArrowUpRight className="h-4 w-4 text-muted-foreground" />}
+                                  </span>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                          {combo.services.length > 0 && (
+                            <p className="mt-4 text-sm text-muted-foreground">
+                              Total: <strong className="text-primary">{fmt(combo.price)}</strong> · {combo.services.length === 1 ? "1 serviço" : `${combo.services.length} serviços`}
+                            </p>
+                          )}
+                          {services.length > 4 && (
+                            <Button variant="ghost" className="mt-3 text-primary" onClick={() => setServicesExpanded(!servicesExpanded)} aria-expanded={servicesExpanded}>
+                              {servicesExpanded ? "Ver menos serviços" : `Todos os serviços (${services.length})`}
+                              <ChevronRight className={cn("ml-2 h-4 w-4 transition-transform", servicesExpanded ? "-rotate-90" : "rotate-90")} />
+                            </Button>
+                          )}
+                          <Button variant="ghost" className="mt-1 text-xs text-muted-foreground" onClick={() => setPickerOpen(o => !o)} aria-expanded={pickerOpen}>
+                            Combinar serviços <ChevronDown className={cn("ml-1 h-3 w-3 transition-transform", pickerOpen && "rotate-180")} />
+                          </Button>
+                          <AnimatePresence initial={false}>
+                            {pickerOpen && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                <BookingServicePicker services={services} value={serviceIds} onChange={setServiceIds} />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {step === 1 && (
+                    <div>
+                      <div className="mb-5 flex items-center gap-2"><User className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Escolha seu barbeiro</h2></div>
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {barbers.map((b, i) => (
+                          <motion.button key={b.id} type="button" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
+                            whileHover={{ y: -4 }} whileTap={{ scale: 0.96 }} onClick={() => setBarber(b.name)}
+                            className={cn("flex flex-col items-center gap-2 rounded-lg border p-5 transition-colors", barber === b.name ? "border-primary bg-primary/10" : "border-border bg-secondary/40 hover:border-primary/50")}>
+                            {b.photo_url ? <img src={b.photo_url} alt={b.name} className="h-16 w-16 rounded-full object-cover" /> :
+                              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15"><User className="h-7 w-7 text-primary" /></div>}
+                            <span className="text-sm font-medium text-center">{b.name}</span>
                           </motion.button>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {SLOTS.map(t => (
-                        <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date || busy.has(t)} onClick={() => setTime(t)}
-                          className={cn("py-2 rounded-lg border text-sm flex items-center justify-center gap-1 disabled:opacity-40", busy.has(t) && "line-through border-destructive/40 text-destructive", time === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/50")}>
-                          {busy.has(t) ? <span className="font-bold">✕</span> : <Clock className="h-3 w-3" />}{t}
-                        </motion.button>
-                      ))}
+                  )}
+                  {step === 2 && (
+                    <div>
+                      <div className="mb-5 flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Data e horário</h2></div>
+                      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+                        {days.map(d => {
+                          const v = d.toISOString().slice(0, 10);
+                          return (
+                            <motion.button key={v} type="button" whileTap={{ scale: 0.92 }} onClick={() => setDate(v)}
+                              className={cn("w-16 shrink-0 rounded-lg border py-3 text-center transition-colors", date === v ? "border-primary gold-gradient text-primary-foreground" : "border-border bg-secondary/40")}>
+                              <p className="text-[10px] uppercase">{d.toLocaleDateString("pt-BR", { weekday: "short" })}</p>
+                              <p className="font-display text-2xl">{d.getDate()}</p>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
+                        {SLOTS.map(t => (
+                          <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date || busy.has(t)} onClick={() => setTime(t)}
+                            className={cn("flex items-center justify-center gap-1 rounded-md border py-2 text-sm transition-colors disabled:opacity-40",
+                              busy.has(t) && "border-destructive/40 text-destructive line-through",
+                              time === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/40")}>
+                            {busy.has(t) ? <X className="h-3 w-3" /> : <Clock className="h-3 w-3" />}{t}
+                          </motion.button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {step === 3 && (
-                  <div className="space-y-3">
-                    <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Seu número (já é cliente? só digite)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
-                    {known && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-primary flex items-center gap-1"><Check className="h-4 w-4" />Olá, {known}! Já encontramos seu cadastro.</motion.p>}
-                    {known && !sessionUid && <a href="/cliente/login" className="text-xs underline text-primary">Entrar na minha conta para agendar pelo meu login</a>}
-                    <div className="relative"><User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
-                    <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />
-                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm space-y-1">
-                      <p className="flex items-center gap-2"><Scissors className="h-3 w-3 text-primary" />{service} · {barber}</p>
-                      <p className="font-semibold text-primary">Total: {combo.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                      <p className="flex items-center gap-2"><Calendar className="h-3 w-3 text-primary" />{date && new Date(date + "T12:00").toLocaleDateString("pt-BR")} às {time}</p>
+                  )}
+                  {step === 3 && (
+                    <div className="space-y-3">
+                      <div className="mb-5 flex items-center gap-2"><Check className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Confirme seus dados</h2></div>
+                      <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Seu número (já é cliente? só digite)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
+                      {known && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 text-sm text-primary"><Check className="h-4 w-4" />Olá, {known}! Já encontramos seu cadastro.</motion.p>}
+                      {known && !sessionUid && <a href="/cliente/login" className="text-xs underline text-primary">Entrar na minha conta para agendar pelo meu login</a>}
+                      <div className="relative"><User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
+                      <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />
                     </div>
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="flex gap-2 mt-6">
-              {step > 0 && <Button variant="outline" onClick={() => setStep(step - 1)} className="gap-1"><ArrowLeft className="h-4 w-4" />Voltar</Button>}
-              {step < 3 ? (
-                <Button className="flex-1 gap-1 gold-gradient text-primary-foreground" disabled={!canNext} onClick={() => setStep(step + 1)}>Continuar <ArrowRight className="h-4 w-4" /></Button>
-              ) : (
-                <Button className="flex-1 gold-gradient text-primary-foreground" disabled={!canNext || sending} onClick={submit}>{sending ? "Enviando..." : "Enviar pedido"}</Button>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+              {step > 0 && (
+                <Button variant="ghost" className="mt-6 text-muted-foreground" onClick={() => setStep(step - 1)}><ArrowLeft className="mr-1 h-4 w-4" />Voltar</Button>
               )}
             </div>
+
+            <aside className="landing-booking-aside border-l border-border pl-0 lg:pl-7 lg:border-t-0">
+              <CalendarDays className="mb-5 h-8 w-8 text-primary" />
+              <h2 className="font-display text-3xl leading-tight">O próximo horário<br />é seu.</h2>
+              <div className="my-6 space-y-4 text-sm text-muted-foreground">
+                {barbers.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {barbers.slice(0, 4).map(b => b.photo_url
+                      ? <img key={b.id} src={b.photo_url} alt={b.name} className="h-10 w-10 rounded-full border-2 border-background object-cover" loading="lazy" />
+                      : <span key={b.id} className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-background bg-secondary text-primary">{b.name.slice(0, 1)}</span>)}
+                  </div>
+                )}
+                {summary.length > 0
+                  ? <ul className="space-y-1">{summary.map((line, i) => <li key={i} className="text-foreground/90">{line}</li>)}</ul>
+                  : <p>Escolha seu barbeiro e encontre o melhor horário para você.</p>}
+                {combo.services.length > 0 && <p>Total: <strong className="text-primary">{fmt(combo.price)}</strong></p>}
+              </div>
+              {step < 3 ? (
+                <Button className="w-full gold-gradient text-primary-foreground" disabled={!canNext} onClick={() => setStep(step + 1)}>
+                  {step === 2 ? "Agendar agora" : "Continuar"} <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button className="confirm-white w-full font-semibold" disabled={!canNext || sending} onClick={submit}>
+                  {sending ? "Confirmando..." : "Confirmar agendamento"}
+                </Button>
+              )}
+              <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary" />Seus dados protegidos.</p>
+            </aside>
           </div>
         )}
 
         {mine.length > 0 && (
-          <div className="mt-6 bg-card/80 backdrop-blur border border-border rounded-2xl p-5">
-            <h3 className="font-display text-2xl mb-3">Meus agendamentos</h3>
+          <section className="landing-section border-t border-border pb-4">
+            <h2 className="font-display text-3xl mb-5">Meus agendamentos</h2>
             <div className="space-y-2">
               {mine.map((m, i) => {
                 const st = mineStatus[`${m.date}|${m.time}|${m.barber_id}`] || (m.date < new Date().toISOString().slice(0, 10) ? "concluído" : "confirmado");
                 return (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/40 text-sm">
+                  <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 p-4 text-sm">
                     <div>
                       <p className="font-medium">{m.service} · {m.barber}</p>
                       <p className="text-xs text-muted-foreground">{new Date(m.date + "T12:00").toLocaleDateString("pt-BR")} às {m.time}</p>
                     </div>
-                    <span className={cn("text-[10px] px-2 py-1 rounded-full border capitalize", st === "cancelado" ? "border-destructive/40 text-destructive" : "border-primary/40 text-primary")}>{st}</span>
+                    <span className={cn("rounded-full border px-2 py-1 text-[10px] capitalize", st === "cancelado" ? "border-destructive/40 text-destructive" : "border-primary/40 text-primary")}>{st}</span>
                   </div>
                 );
               })}
             </div>
-            {done && <Button variant="outline" className="w-full mt-3" onClick={() => { setDone(false); setStep(0); setTime(""); }}>Fazer outro agendamento</Button>}
-          </div>
+          </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }
