@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { cn } from "@/lib/utils";
+import BookingServicePicker from "@/components/BookingServicePicker";
+import { getBookingCombo } from "@/lib/bookingCombo";
 
 const TIME_SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
 
@@ -82,8 +84,8 @@ export default function Agendamento() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [shopId, setShopId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({ client_name: "", client_phone: "", service_id: "", barber_id: "", appointment_time: "", notes: "" });
-  const [walk, setWalk] = useState({ client_name: "", service_id: "", barber_id: "", date: "", time: "" });
+  const [form, setForm] = useState({ client_name: "", client_phone: "", service_ids: [] as string[], barber_id: "", appointment_time: "", notes: "" });
+  const [walk, setWalk] = useState({ client_name: "", service_ids: [] as string[], barber_id: "", date: "", time: "" });
 
   const [clientList, setClientList] = useState<{ user_id: string; full_name: string; phone: string | null }[]>([]);
   const [clientUserId, setClientUserId] = useState<string | null>(null);
@@ -277,14 +279,14 @@ export default function Agendamento() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !ownerId) return;
-    const svc = services.find(s => s.id === form.service_id);
+    const combo = getBookingCombo(services, form.service_ids);
     const brb = barbers.find(b => b.id === form.barber_id);
-    if (!svc) { toast.error("Escolha um serviço"); return; }
+    if (!combo.services.length) { toast.error("Escolha um serviço"); return; }
     setSaving(true);
     const notes = `${form.client_name}||${form.client_phone}||${form.notes}`;
     const base = {
       owner_id: ownerId, barbershop_id: shopId,
-      service: svc.name, price: svc.price,
+      service: combo.name, price: combo.price,
       barber: brb?.name || "Barbeiro", barber_id: brb?.id || null,
       appointment_date: dateISO, appointment_time: form.appointment_time,
       status: "confirmado", notes,
@@ -297,7 +299,7 @@ export default function Agendamento() {
     if (error) { toast.error("Erro: " + error.message); return; }
     toast.success("Agendamento criado!");
     setOpen(false);
-    setForm({ client_name: "", client_phone: "", service_id: "", barber_id: "", appointment_time: "", notes: "" });
+    setForm({ client_name: "", client_phone: "", service_ids: [], barber_id: "", appointment_time: "", notes: "" });
     setClientUserId(null);
     fetchAppointments();
   };
@@ -305,16 +307,16 @@ export default function Agendamento() {
   const handleWalkIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !ownerId) return;
-    const svc = services.find(s => s.id === walk.service_id);
+    const combo = getBookingCombo(services, walk.service_ids);
     const brb = barbers.find(b => b.id === walk.barber_id);
-    if (!svc) { toast.error("Escolha um serviço"); return; }
+    if (!combo.services.length) { toast.error("Escolha um serviço"); return; }
     setSaving(true);
     const now = new Date();
     const dateStr = walk.date || toISO(now);
     const timeStr = walk.time || `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
     const { data, error } = await supabase.from("appointments").insert({
       user_id: user.id, owner_id: ownerId, barbershop_id: shopId,
-      service: svc.name, price: svc.price,
+      service: combo.name, price: combo.price,
       barber: brb?.name || "Avulso", barber_id: brb?.id || null,
       appointment_date: dateStr, appointment_time: timeStr,
       status: "concluido",
@@ -325,7 +327,7 @@ export default function Agendamento() {
     setSaving(false);
     toast.success("Atendimento avulso registrado");
     setWalkOpen(false);
-    setWalk({ client_name: "", service_id: "", barber_id: "", date: "", time: "" });
+    setWalk({ client_name: "", service_ids: [], barber_id: "", date: "", time: "" });
     fetchAppointments();
   };
 
@@ -394,13 +396,8 @@ export default function Agendamento() {
                   <Input value={walk.client_name} onChange={e => setWalk({ ...walk, client_name: e.target.value })} placeholder="Nome (opcional)" />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Serviço *</label>
-                  <Select value={walk.service_id} onValueChange={v => setWalk({ ...walk, service_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Escolha..." /></SelectTrigger>
-                    <SelectContent>
-                      {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name} — {fmt(s.price)}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-xs text-muted-foreground mb-1 block">Serviços / Combo *</label>
+                  <BookingServicePicker services={services} value={walk.service_ids} onChange={ids => setWalk({ ...walk, service_ids: ids })} />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Barbeiro</label>
@@ -422,7 +419,7 @@ export default function Agendamento() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Vazio = agora. Para atendimentos retroativos, escolha data e hora passadas. Será lançado no financeiro automaticamente.</p>
-                <Button type="submit" className="w-full gold-gradient text-primary-foreground" disabled={saving || !walk.service_id}>
+                <Button type="submit" className="w-full gold-gradient text-primary-foreground" disabled={saving || !walk.service_ids.length}>
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</> : "Registrar atendimento"}
                 </Button>
               </form>
@@ -484,7 +481,7 @@ export default function Agendamento() {
                 <Plus className="mr-2 h-4 w-4" /> Novo Agendamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl gold-text">Novo Agendamento</DialogTitle>
               </DialogHeader>
@@ -513,15 +510,10 @@ export default function Agendamento() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Serviço *</label>
-                    <Select value={form.service_id} onValueChange={(v) => setForm({ ...form, service_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Escolha..." /></SelectTrigger>
-                      <SelectContent>
-                        {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name} — {fmt(s.price)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <label className="text-xs text-muted-foreground mb-1 block">Serviços / Combo *</label>
+                    <BookingServicePicker services={services} value={form.service_ids} onChange={ids => setForm({ ...form, service_ids: ids })} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Barbeiro</label>
@@ -561,7 +553,7 @@ export default function Agendamento() {
                   <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
                 </div>
 
-                <Button type="submit" className="w-full gold-gradient text-primary-foreground" disabled={saving || !form.appointment_time || !form.service_id}>
+                <Button type="submit" className="w-full gold-gradient text-primary-foreground" disabled={saving || !form.appointment_time || !form.service_ids.length}>
                   {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : "Confirmar agendamento"}
                 </Button>
               </form>

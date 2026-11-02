@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import BookingServicePicker from "@/components/BookingServicePicker";
+import { getBookingCombo } from "@/lib/bookingCombo";
 
 const SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00"];
 
@@ -20,7 +22,9 @@ export default function AgendarRapido() {
   const [services, setServices] = useState<{ id: string; name: string; price: number }[]>([]);
   const [barbers, setBarbers] = useState<{ id: string; name: string; photo_url: string | null }[]>([]);
   const [step, setStep] = useState(0);
-  const [service, setService] = useState("");
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
+  const combo = getBookingCombo(services, serviceIds);
+  const service = combo.name;
   const [barber, setBarber] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -51,7 +55,8 @@ export default function AgendarRapido() {
 
   useEffect(() => {
     (async () => {
-      const { data: b } = await supabase.from("barbershops").select("id,owner_id,name,logo_url,description").eq("slug", slug!).eq("active", true).maybeSingle();
+      if (!slug) { setLoading(false); return; }
+      const { data: b } = await supabase.from("barbershops").select("id,owner_id,name,logo_url,description").eq("slug", slug).eq("active", true).maybeSingle();
       if (b) {
         setShop(b as Shop);
         const [{ data: s }, { data: br }] = await Promise.all([
@@ -108,21 +113,23 @@ export default function AgendarRapido() {
   };
 
   const submit = async () => {
-    if (!shop) return;
+    if (!shop || !combo.services.length || !date || !time || !barber || sending) return;
     setSending(true);
     if (sessionUid) {
-      const svc = services.find(s => s.name === service);
       const brb = barbers.find(b => b.name === barber);
       const { error: e2 } = await supabase.from("appointments").insert({
         user_id: sessionUid, owner_id: shop.owner_id, barbershop_id: shop.id, service, barber,
-        barber_id: brb?.id || null, price: svc?.price || 0, appointment_date: date, appointment_time: time,
+        barber_id: brb?.id || null, price: combo.price, appointment_date: date, appointment_time: time,
         status: "confirmado", notes: `${name.trim()}||${phone.replace(/\D/g, "")}||${notes.trim()}`,
       });
       if (!e2) { setSending(false); saveMine(); setDone(true); return; }
+      setSending(false);
+      toast.error(e2.message?.includes("reservado") ? "Esse horário acabou de ser reservado. Escolha outro." : "Não foi possível agendar. Tente novamente.");
+      return;
     }
     const { error } = await supabase.from("guest_bookings").insert({
       barbershop_id: shop.id, owner_id: shop.owner_id, name: name.trim(),
-      phone: phone.replace(/\D/g, "") || null, service, barber,
+      phone: phone.replace(/\D/g, "") || null, service, service_ids: combo.serviceIds, barber,
       preferred_date: date, preferred_time: time, notes: notes.trim() || null,
     });
     setSending(false);
@@ -176,22 +183,15 @@ export default function AgendarRapido() {
               <motion.div key={step} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.25 }} className="min-h-[280px]">
                 {step === 0 && (
                   <div className="grid gap-2">
-                    <button type="button" onClick={() => setOpenSvc(o => !o)} className="flex justify-between items-center p-4 rounded-xl border border-primary/40 bg-primary/5 font-medium">
-                      <span className="flex items-center gap-2"><Scissors className="h-4 w-4 text-primary" />{service || "Escolha o serviço"}</span>
+                    <Button variant="outline" type="button" aria-expanded={openSvc} onClick={() => setOpenSvc(o => !o)} className="h-auto min-h-14 whitespace-normal flex justify-between items-center p-4 rounded-xl border border-primary/40 bg-primary/5 font-medium text-left">
+                      <span className="flex min-w-0 items-center gap-2"><Scissors className="h-4 w-4 shrink-0 text-primary" /><span className="break-words">{service || "Escolha os serviços"}</span></span>
                       <motion.span animate={{ rotate: openSvc ? 180 : 0 }}><ChevronDown className="h-5 w-5 text-primary" /></motion.span>
-                    </button>
+                    </Button>
                     <AnimatePresence initial={false}>{openSvc && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="grid gap-2 overflow-hidden">
-                    {services.length === 0 && <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado.</p>}
-                    {services.map((s, i) => (
-                      <motion.button key={s.id} type="button" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { setService(s.name); setOpenSvc(false); }}
-                        className={cn("flex justify-between items-center p-4 rounded-xl border text-left transition-colors", service === s.name ? "border-primary bg-primary/10" : "border-border bg-secondary/50 hover:border-primary/50")}>
-                        <span className="flex items-center gap-2 font-medium"><Scissors className="h-4 w-4 text-primary" />{s.name}</span>
-                        <span className="gold-text font-semibold">{s.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-                      </motion.button>
-                    ))}
+                    <BookingServicePicker services={services} value={serviceIds} onChange={setServiceIds} />
                     </motion.div>)}</AnimatePresence>
+                    {!openSvc && combo.services.length > 0 && <p className="text-right font-semibold text-primary">{combo.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>}
                   </div>
                 )}
                 {step === 1 && (
@@ -242,6 +242,7 @@ export default function AgendarRapido() {
                     <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />
                     <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm space-y-1">
                       <p className="flex items-center gap-2"><Scissors className="h-3 w-3 text-primary" />{service} · {barber}</p>
+                      <p className="font-semibold text-primary">Total: {combo.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                       <p className="flex items-center gap-2"><Calendar className="h-3 w-3 text-primary" />{date && new Date(date + "T12:00").toLocaleDateString("pt-BR")} às {time}</p>
                     </div>
                   </div>
