@@ -1,6 +1,6 @@
 {
-  "name": "Barber Pro",
-  "short_name": "Barber Pro",
+  "name": "GestBarber",
+  "short_name": "GestBarber",
   "description": "Gestão completa da sua barbearia — agendamentos, assinaturas, loja e financeiro.",
   "start_url": "/",
   "display": "standalone",

@@ -119,7 +119,7 @@ export default function AdminWhatsApp() {
   const sendTest = async () => {
     if (!testTo) { toast.error("Informe o número"); return; }
     setTesting(true);
-    const { data, error } = await supabase.functions.invoke("whatsapp-send", { body: { to: testTo, message: "✅ Teste — Barber Pro" } });
+    const { data, error } = await supabase.functions.invoke("whatsapp-send", { body: { to: testTo, message: "✅ Teste — GestBarber" } });
     if (error || (data as any)?.error) toast.error((data as any)?.error || error?.message || "Erro");
     else toast.success("Mensagem enviada");
     setTesting(false);

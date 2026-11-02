@@ -32,7 +32,7 @@ const upsertMeta = (
 };
 
 export function applyShopBranding(shop: ShopBranding) {
-  const title = shop.name?.trim() || "Barber Pro";
+  const title = shop.name?.trim() || "GestBarber";
   const description = shop.description?.trim() || `Agendamentos, planos e serviços da ${title}.`;
   const url = typeof window !== "undefined" ? window.location.href : "";
 
@@ -78,7 +78,7 @@ export function applyShopBranding(shop: ShopBranding) {
 }
 
 export async function shareShop(shop: ShopBranding & { url?: string }) {
-  const title = shop.name?.trim() || "Barber Pro";
+  const title = shop.name?.trim() || "GestBarber";
   const text = shop.description?.trim() || `Confira a ${title} — agende seu horário!`;
   const url = shop.url || (typeof window !== "undefined" ? window.location.href : "");
 

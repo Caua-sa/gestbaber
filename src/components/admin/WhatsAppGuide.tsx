@@ -49,7 +49,7 @@ node server.js`}</Code>
           <li>Baixe o <b>cloudflared</b> grátis em <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/" target="_blank" rel="noreferrer" className="text-primary underline">cloudflare.com</a> e rode:
             <Code>{`cloudflared tunnel --url http://localhost:3000`}</Code>
           </li>
-          <li>Ele mostra uma URL tipo <code>https://alguma-coisa.trycloudflare.com</code>. <b>Copie essa URL</b> — é ela que você cola no Barber Pro (Passo 2).</li>
+          <li>Ele mostra uma URL tipo <code>https://alguma-coisa.trycloudflare.com</code>. <b>Copie essa URL</b> — é ela que você cola no GestBarber (Passo 2).</li>
           <li>Deixe as duas janelas abertas (servidor + túnel). Se o PC desligar, é só abrir os dois de novo — o WhatsApp continua conectado, só o QR que não precisa escanear de novo.</li>
         </ol>
         <p className="text-xs text-muted-foreground">
@@ -79,7 +79,7 @@ WEBHOOK_OWNER_ID=SEU_USER_ID_DO_BARBER_PRO`}</Code>
 
       {/* Passo 2 */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-3">
-        <h3 className="font-display text-lg flex items-center gap-2"><KeyRound className="h-5 w-5 text-primary" /> 2. Configure no Barber Pro</h3>
+        <h3 className="font-display text-lg flex items-center gap-2"><KeyRound className="h-5 w-5 text-primary" /> 2. Configure no GestBarber</h3>
         <ol className="list-decimal ml-5 space-y-2 text-sm">
           <li>Vá para a aba <b>QR Code</b> aqui em cima.</li>
           <li>Cole a URL pública em <b>URL pública</b>.</li>

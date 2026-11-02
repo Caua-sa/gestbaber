@@ -1,3 +1,4 @@
+import "@/styles/landing.css";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -139,12 +140,12 @@ export default function ClientePortal() {
   const firstName = profile?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "cliente";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="public-landing public-flow min-h-screen bg-background">
       <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-display gold-text tracking-wider">BARBER PRO</h1>
+            <h1 className="text-xl font-display gold-text tracking-wider">GESTBARBER</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block capitalize">{firstName}</span>

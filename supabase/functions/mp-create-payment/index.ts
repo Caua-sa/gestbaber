@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         items: [
           {
-            title: description || "Pagamento Barber Pro",
+            title: description || "Pagamento GestBarber",
             quantity: 1,
             unit_price: Number(amount),
             currency_id: "BRL",

@@ -71,7 +71,7 @@ export function NotificationLetter({
             <div className="pt-2 border-t border-border flex items-end justify-between gap-3 flex-wrap">
               <div>
                 <p className="font-display text-lg gold-text">Administração do App</p>
-                <p className="text-[11px] text-muted-foreground">Comunicado oficial • Barber Pro</p>
+                <p className="text-[11px] text-muted-foreground">Comunicado oficial • GestBarber</p>
               </div>
               <div className="flex gap-2">
                 {!notification.read && onMarkRead && (
