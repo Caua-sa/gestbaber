@@ -155,19 +155,14 @@ export default function AgendarRapido() {
   ].filter(Boolean) as string[];
 
   return (
-    <div className="public-landing public-flow min-h-screen bg-background text-foreground relative overflow-hidden">
-      <motion.div aria-hidden className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
-        animate={{ x: [0, 60, 0], y: [0, 40, 0] }} transition={{ duration: 12, repeat: Infinity }} />
-      <motion.div aria-hidden className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl"
-        animate={{ x: [0, -50, 0], y: [0, -30, 0] }} transition={{ duration: 14, repeat: Infinity }} />
-
+    <div className="public-landing public-flow booking-flow min-h-screen bg-background text-foreground relative overflow-hidden">
       <header className="landing-nav sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl">
         <div className="landing-container flex min-h-20 items-center justify-between gap-4 py-3">
           <Link to={`/site/${slug}`} className="flex min-w-0 items-center gap-3">
             {shop.logo_url ? <img src={shop.logo_url} alt={shop.name} className="h-11 w-11 shrink-0 rounded-md object-cover" /> : <Scissors className="h-9 w-9 shrink-0 text-primary" />}
             <span className="font-display text-2xl leading-none break-words">{shop.name}</span>
           </Link>
-          <Button asChild variant="outline" className="border-primary/50 text-primary">
+          <Button asChild variant="outline" className="shrink-0 border-border text-foreground">
             <Link to={sessionUid ? "/cliente" : "/cliente/login"}>{sessionUid ? "Meu portal" : "Entrar"} <ArrowUpRight className="ml-2 h-4 w-4" /></Link>
           </Button>
         </div>
@@ -207,7 +202,7 @@ export default function AgendarRapido() {
           </motion.div>
         ) : (
           <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-            <div>
+            <div className="booking-content">
               <AnimatePresence mode="wait">
                 <motion.div key={step} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.25 }} className="min-h-[300px]">
                   {step === 0 && (
@@ -221,7 +216,7 @@ export default function AgendarRapido() {
                               return (
                                 <motion.button key={s.id} type="button" {...reveal} transition={{ duration: 0.35, delay: (i % 4) * 0.04 }}
                                   aria-pressed={selected} onClick={() => setServiceIds(sel => sel.includes(s.id) ? sel.filter(x => x !== s.id) : [...sel, s.id])}
-                                  className={cn("landing-service flex h-full min-h-24 w-full items-center justify-between gap-4 border p-5 text-left transition-colors",
+                                  className={cn("landing-service booking-choice booking-service flex h-full min-h-24 w-full items-center justify-between gap-4 border p-5 text-left transition-colors",
                                     selected ? "border-primary bg-primary/10" : "border-border")}>
                                   <span className="min-w-0">
                                     <span className="block break-words text-base font-medium">{s.name}</span>
@@ -269,11 +264,11 @@ export default function AgendarRapido() {
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         {barbers.map((b, i) => (
                           <motion.button key={b.id} type="button" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                            whileHover={{ y: -4 }} whileTap={{ scale: 0.96 }} onClick={() => setBarber(b.name)}
-                            className={cn("flex flex-col items-center gap-2 rounded-lg border p-5 transition-colors", barber === b.name ? "border-primary bg-primary/10" : "border-border bg-secondary/40 hover:border-primary/50")}>
+                            whileHover={{ y: -4 }} whileTap={{ scale: 0.96 }} onClick={() => setBarber(b.name)} aria-pressed={barber === b.name}
+                            className={cn("booking-choice min-w-0 flex flex-col items-center gap-2 rounded-lg border p-4 sm:p-5 transition-colors", barber === b.name ? "border-primary bg-primary/10" : "border-border bg-secondary/40 hover:border-primary/50")}>
                             {b.photo_url ? <img src={b.photo_url} alt={b.name} className="h-16 w-16 rounded-full object-cover" /> :
                               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15"><User className="h-7 w-7 text-primary" /></div>}
-                            <span className="text-sm font-medium text-center">{b.name}</span>
+                            <span className="max-w-full break-words text-sm font-medium text-center">{b.name}</span>
                           </motion.button>
                         ))}
                       </div>
@@ -286,8 +281,8 @@ export default function AgendarRapido() {
                         {days.map(d => {
                           const v = d.toISOString().slice(0, 10);
                           return (
-                            <motion.button key={v} type="button" whileTap={{ scale: 0.92 }} onClick={() => setDate(v)}
-                              className={cn("w-16 shrink-0 rounded-lg border py-3 text-center transition-colors", date === v ? "border-primary gold-gradient text-primary-foreground" : "border-border bg-secondary/40")}>
+                            <motion.button key={v} type="button" whileTap={{ scale: 0.92 }} onClick={() => setDate(v)} aria-pressed={date === v}
+                              className={cn("booking-choice w-16 shrink-0 rounded-lg border py-3 text-center transition-colors", date === v ? "border-primary gold-gradient text-primary-foreground" : "border-border bg-secondary/40")}>
                               <p className="text-[10px] uppercase">{d.toLocaleDateString("pt-BR", { weekday: "short" })}</p>
                               <p className="font-display text-2xl">{d.getDate()}</p>
                             </motion.button>
@@ -296,8 +291,8 @@ export default function AgendarRapido() {
                       </div>
                       <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
                         {SLOTS.map(t => (
-                          <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date || busy.has(t)} onClick={() => setTime(t)}
-                            className={cn("flex items-center justify-center gap-1 rounded-md border py-2 text-sm transition-colors disabled:opacity-40",
+                          <motion.button key={t} type="button" whileTap={{ scale: 0.92 }} disabled={!date || busy.has(t)} onClick={() => setTime(t)} aria-pressed={time === t}
+                            className={cn("booking-choice flex items-center justify-center gap-1 rounded-md border py-2 text-sm transition-colors disabled:opacity-60",
                               busy.has(t) && "border-destructive/40 text-destructive line-through",
                               time === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-secondary/40")}>
                             {busy.has(t) ? <X className="h-3 w-3" /> : <Clock className="h-3 w-3" />}{t}
@@ -310,11 +305,11 @@ export default function AgendarRapido() {
                     <div className="space-y-3">
                       <div className="mb-5 flex items-center gap-2"><Check className="h-5 w-5 text-primary" /><h2 className="font-display text-2xl">Confirme seus dados</h2></div>
                       <div className="relative"><Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Seu número (já é cliente? só digite)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
+                        <Input type="tel" autoComplete="tel" aria-label="Seu número" placeholder="Seu número (opcional)" value={phone} onChange={e => { setPhone(e.target.value); lookupPhone(e.target.value); }} className="pl-10 bg-secondary border-border" /></div>
                       {known && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1 text-sm text-primary"><Check className="h-4 w-4" />Olá, {known}! Já encontramos seu cadastro.</motion.p>}
                       {known && !sessionUid && <a href="/cliente/login" className="text-xs underline text-primary">Entrar na minha conta para agendar pelo meu login</a>}
                       <div className="relative"><User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
+                        <Input autoComplete="name" aria-label="Seu nome" placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} maxLength={120} className="pl-10 bg-secondary border-border" /></div>
                       <Textarea placeholder="Observações (opcional)" value={notes} onChange={e => setNotes(e.target.value)} maxLength={500} className="bg-secondary border-border" />
                     </div>
                   )}
@@ -326,11 +321,11 @@ export default function AgendarRapido() {
             </div>
 
             <aside className="landing-booking-aside border-l border-border pl-0 lg:pl-7 lg:border-t-0">
-              <CalendarDays className="mb-5 h-8 w-8 text-primary" />
-              <h2 className="font-display text-3xl leading-tight">O próximo horário<br />é seu.</h2>
-              <div className="my-6 space-y-4 text-sm text-muted-foreground">
+              <CalendarDays className="booking-aside-heading mb-5 h-8 w-8 text-primary" />
+              <h2 className="booking-aside-heading font-display text-3xl leading-tight">O próximo horário<br />é seu.</h2>
+              <div className="booking-summary my-6 space-y-4 text-sm text-muted-foreground">
                 {barbers.length > 0 && (
-                  <div className="flex -space-x-2">
+                  <div className="booking-aside-avatars flex -space-x-2">
                     {barbers.slice(0, 4).map(b => b.photo_url
                       ? <img key={b.id} src={b.photo_url} alt={b.name} className="h-10 w-10 rounded-full border-2 border-background object-cover" loading="lazy" />
                       : <span key={b.id} className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-background bg-secondary text-primary">{b.name.slice(0, 1)}</span>)}
@@ -341,16 +336,19 @@ export default function AgendarRapido() {
                   : <p>Escolha seu barbeiro e encontre o melhor horário para você.</p>}
                 {combo.services.length > 0 && <p>Total: <strong className="text-primary">{fmt(combo.price)}</strong></p>}
               </div>
+              <div className="booking-controls">
+                <div className="booking-mobile-total"><span>Total</span><strong>{fmt(combo.price)}</strong></div>
               {step < 3 ? (
-                <Button className="w-full gold-gradient text-primary-foreground" disabled={!canNext} onClick={() => setStep(step + 1)}>
+                <Button className="booking-action w-full" disabled={!canNext} onClick={() => setStep(step + 1)}>
                   {step === 2 ? "Agendar agora" : "Continuar"} <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button className="confirm-white w-full font-semibold" disabled={!canNext || sending} onClick={submit}>
+                <Button className="booking-action w-full font-semibold" disabled={!canNext || sending} onClick={submit}>
                   {sending ? "Confirmando..." : "Confirmar agendamento"}
                 </Button>
               )}
-              <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary" />Seus dados protegidos.</p>
+              </div>
+              <p className="booking-security mt-4 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary" />Seus dados protegidos.</p>
             </aside>
           </div>
         )}
@@ -362,8 +360,8 @@ export default function AgendarRapido() {
               {mine.map((m, i) => {
                 const st = mineStatus[`${m.date}|${m.time}|${m.barber_id}`] || (m.date < new Date().toISOString().slice(0, 10) ? "concluído" : "confirmado");
                 return (
-                  <div key={i} className="flex items-center justify-between rounded-lg border border-border bg-secondary/40 p-4 text-sm">
-                    <div>
+                  <div key={i} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 p-4 text-sm">
+                    <div className="min-w-0 break-words">
                       <p className="font-medium">{m.service} · {m.barber}</p>
                       <p className="text-xs text-muted-foreground">{new Date(m.date + "T12:00").toLocaleDateString("pt-BR")} às {m.time}</p>
                     </div>
