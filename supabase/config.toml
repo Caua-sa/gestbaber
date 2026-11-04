@@ -1,19 +1,17 @@
 project_id = "gjfdpphvhbnsxvmyqnpf"
 
-[functions.mp-subscription-webhook]
-verify_jwt = false
-
-[functions.mp-payment-webhook]
-verify_jwt = false
-
-[functions.signup-admin]
-verify_jwt = false
-
-[functions.whatsapp-bot-cron]
-verify_jwt = false
-
-[functions.signup-send-otp]
-verify_jwt = false
-
-[functions.signup-verify-otp]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.mp-payment-webhook]
+    verify_jwt = false
+  [functions.mp-subscription-webhook]
+    verify_jwt = false
+  [functions.signup-admin]
+    verify_jwt = false
+  [functions.signup-send-otp]
+    verify_jwt = false
+  [functions.signup-verify-otp]
+    verify_jwt = false
+  [functions.whatsapp-bot-cron]
+    verify_jwt = false
