@@ -1067,6 +1067,42 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_requests: {
+        Row: {
+          barbershop_name: string
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          status: string
+        }
+        Insert: {
+          barbershop_name: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          status?: string
+        }
+        Update: {
+          barbershop_name?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_by: string | null
