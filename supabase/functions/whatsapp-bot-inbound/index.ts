@@ -25,7 +25,16 @@ async function sendReply(ownerId: string, phone: string, text: string) {
     .maybeSingle();
   if (!s) return;
   try {
-    if (s.mode === "baileys" && s.baileys_url) {
+    if (s.mode === "extension" && s.baileys_url) {
+      await fetch(s.baileys_url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}),
+        },
+        body: JSON.stringify({ action: "send_message", phone: phone.replace(/\D/g, ""), message: text.slice(0, 4000) }),
+      });
+    } else if (s.mode === "baileys" && s.baileys_url) {
       await fetch(s.baileys_url.replace(/\/$/, "") + "/send", {
         method: "POST",
         headers: {
@@ -241,6 +250,105 @@ async function handleMessage(ownerId: string, phone: string, message: string) {
   return sendReply(ownerId, phone, MENU);
 }
 
+const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+async function freeSlots(ownerId: string, date: string, barberName?: string | null) {
+  let q = admin.from("appointments").select("appointment_time, barber")
+    .eq("owner_id", ownerId).eq("appointment_date", date)
+    .in("status", ["agendado", "confirmado", "pendente"]);
+  const { data: taken } = await q;
+  const takenSet = new Set((taken || [])
+    .filter((t) => !barberName || norm(t.barber || "") === norm(barberName))
+    .map((t) => (t.appointment_time || "").slice(0, 5)));
+  const slots: string[] = [];
+  for (let h = 9; h < 19; h++) for (const m of [0, 30]) {
+    const s = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    if (!takenSet.has(s)) slots.push(s);
+  }
+  return slots;
+}
+
+async function handleAction(ownerId: string, b: Record<string, any>): Promise<{ status: number; body: unknown }> {
+  const { data: settings } = await admin.from("whatsapp_settings")
+    .select("baileys_token, mode").eq("owner_id", ownerId).maybeSingle();
+  if (!settings) return { status: 404, body: { error: "Barbearia não encontrada ou WhatsApp não configurado" } };
+  if (settings.mode === "extension" && settings.baileys_token && b.token !== settings.baileys_token) {
+    return { status: 401, body: { error: "Token inválido" } };
+  }
+  const { data: shop } = await admin.from("barbershops").select("id, name").eq("owner_id", ownerId).maybeSingle();
+  if (!shop) return { status: 404, body: { error: "Barbearia não encontrada" } };
+
+  const action = String(b.action);
+  const date = String(b.date || "");
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
+
+  if (action === "check_availability" || action === "consultar_horarios") {
+    if (!validDate) return { status: 400, body: { error: "date obrigatório (AAAA-MM-DD)" } };
+    const slots = await freeSlots(ownerId, date, b.barber || null);
+    return { status: 200, body: { ok: true, date, barber: b.barber || null, available: slots } };
+  }
+
+  if (action === "create_appointment" || action === "criar_agendamento") {
+    const name = String(b.clientName || "").trim().slice(0, 120);
+    const phone = String(b.clientPhone || "").replace(/\D/g, "").slice(0, 20);
+    const time = String(b.time || "").slice(0, 5);
+    if (!name || !validDate || !/^\d{2}:\d{2}$/.test(time) || !b.service) {
+      return { status: 400, body: { error: "clientName, service, date (AAAA-MM-DD) e time (HH:MM) são obrigatórios" } };
+    }
+    const { data: services } = await admin.from("services").select("id, name").eq("owner_id", ownerId).eq("active", true);
+    const wanted = String(b.service).split(/[+,]/).map(norm).filter(Boolean);
+    const matched = (services || []).filter((s) => wanted.some((w) => norm(s.name).includes(w) || w.includes(norm(s.name))));
+    if (!matched.length) {
+      return { status: 400, body: { error: "Serviço não encontrado", services: (services || []).map((s) => s.name) } };
+    }
+    const { data: barbers } = await admin.from("barbers").select("name").eq("owner_id", ownerId).eq("active", true);
+    let barber = (barbers || []).find((x) => b.barber && norm(x.name) === norm(String(b.barber)))?.name;
+    if (!barber) {
+      for (const x of barbers || []) {
+        if ((await freeSlots(ownerId, date, x.name)).includes(time)) { barber = x.name; break; }
+      }
+    }
+    if (!barber) return { status: 409, body: { error: "Nenhum barbeiro livre nesse horário" } };
+    if (!(await freeSlots(ownerId, date, barber)).includes(time)) {
+      return { status: 409, body: { error: "Horário indisponível", available: await freeSlots(ownerId, date, barber) } };
+    }
+    const { data: row, error } = await admin.from("guest_bookings").insert({
+      barbershop_id: shop.id, owner_id: ownerId, name, phone: phone || null,
+      service: matched.map((s) => s.name).join(" + "), service_ids: matched.map((s) => s.id),
+      barber, preferred_date: date, preferred_time: time,
+      notes: String(b.notes || "Agendamento via WhatsApp").slice(0, 500),
+    }).select("id").single();
+    if (error) return { status: 409, body: { error: error.message } };
+    return { status: 200, body: { ok: true, id: row.id, barbershop: shop.name, service: matched.map((s) => s.name).join(" + "), barber, date, time, status: "confirmado" } };
+  }
+
+  if (action === "send_reminder" || action === "aviso_horario" || action === "list_appointments") {
+    const day = validDate ? date : new Date().toISOString().slice(0, 10);
+    const { data: appts } = await admin.from("appointments")
+      .select("id, appointment_date, appointment_time, service, barber, notes, user_id, status")
+      .eq("owner_id", ownerId).eq("appointment_date", day)
+      .in("status", ["agendado", "confirmado"]).order("appointment_time");
+    const ids = [...new Set((appts || []).map((a) => a.user_id).filter(Boolean))];
+    const { data: profs } = ids.length
+      ? await admin.from("profiles").select("user_id, full_name, phone").in("user_id", ids)
+      : { data: [] as any[] };
+    const list = (appts || []).map((a) => {
+      const p = (profs || []).find((x: any) => x.user_id === a.user_id);
+      const parts = String(a.notes || "").split("||");
+      const clientName = parts.length >= 2 && parts[0] ? parts[0] : p?.full_name || "Cliente";
+      const clientPhone = (parts.length >= 2 && parts[1] ? parts[1] : p?.phone || "").replace(/\D/g, "");
+      const time = (a.appointment_time || "").slice(0, 5);
+      return {
+        id: a.id, clientName, clientPhone, service: a.service, barber: a.barber, date: a.appointment_date, time,
+        message: `Olá ${clientName}! ⏰ Lembrete: seu horário em *${shop.name}* é ${a.appointment_date.split("-").reverse().join("/")} às ${time} (${a.service} com ${a.barber}).`,
+      };
+    });
+    return { status: 200, body: { ok: true, date: day, appointments: list } };
+  }
+
+  return { status: 400, body: { error: "Ação desconhecida", actions: ["create_appointment", "check_availability", "send_reminder"] } };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -255,6 +363,15 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+
+    // BarberBot / extension structured actions
+    if (body.action && body.owner_id) {
+      const result = await handleAction(String(body.owner_id), body);
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Baileys shape
     if (body.owner_id && body.phone && body.message) {
