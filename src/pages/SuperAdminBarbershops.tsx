@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, Ban, CheckCircle2, Trash2, KeyRound, Mail, Search, Crown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationBroadcast } from "@/components/superadmin/NotificationBroadcast";
+import { TrialRequests } from "@/components/superadmin/TrialRequests";
 
 interface Shop {
   id: string; name: string; slug: string; owner_id: string;
@@ -117,6 +118,7 @@ export default function SuperAdminBarbershops() {
         </div>
       </header>
 
+      <TrialRequests />
       <NotificationBroadcast shops={shops} userId={user.id} />
 
       <div className="bg-card border border-border rounded-xl p-4 space-y-3">

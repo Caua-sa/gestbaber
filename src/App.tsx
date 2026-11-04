@@ -14,6 +14,7 @@ import Financeiro from "./pages/Financeiro";
 import Estoque from "./pages/Estoque";
 import Vendas from "./pages/Vendas";
 import LandingPage from "./pages/LandingPage";
+import GestBarberHome from "./pages/GestBarberHome";
 import BarbershopPublic from "./pages/BarbershopPublic";
 import AdminLanding from "./pages/admin/AdminLanding";
 import AdminBannerAI from "./pages/admin/AdminBannerAI";
@@ -74,7 +75,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             {/* Public landing page (root domain) */}
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<GestBarberHome />} />
             <Route path="/site" element={<LandingPage />} />
             <Route path="/site/:slug" element={<BarbershopPublic />} />
             <Route path="/tv/:slug" element={<TvAgenda />} />
