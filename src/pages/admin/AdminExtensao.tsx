@@ -11,8 +11,7 @@ import { toast } from "sonner";
 const copy = (v: string) => { navigator.clipboard.writeText(v); toast.success("Copiado"); };
 
 export default function AdminExtensao() {
-  const owner = useAccountOwner() as any;
-  const ownerId: string | undefined = owner?.ownerId ?? owner;
+  const { ownerId } = useAccountOwner();
   const [shop, setShop] = useState<{ id: string; slug: string; name: string } | null>(null);
   const [botUrl, setBotUrl] = useState("");
   const [token, setToken] = useState("");
