@@ -59,36 +59,19 @@ Deno.serve(async (req) => {
       .select("mode, phone_number_id, access_token, baileys_url, baileys_token")
       .eq("owner_id", ownerId)
       .maybeSingle();
-    if (!s) throw new Error("WhatsApp não configurado");
-
-    if ((s.mode || "cloud") === "baileys") {
-      if (!s.baileys_url) throw new Error("Servidor do WhatsApp (QR Code) não configurado. Vá em WhatsApp e conecte.");
-      let r: Response;
-      try {
-        r = await fetch(`${s.baileys_url.replace(/\/$/, "")}/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}) },
-          body: JSON.stringify({ to, message }),
-          signal: AbortSignal.timeout(10000),
-        });
-      } catch {
-        throw new Error("Servidor do WhatsApp está desligado ou o endereço mudou. Ligue o servidor e atualize o endereço em WhatsApp.");
-      }
-      if (!r.ok) {
-        const body = await r.json().catch(() => ({}));
-        if (r.status === 401) throw new Error("Token do servidor WhatsApp incorreto.");
-        if (String(body?.error || "").includes("conectado")) throw new Error("WhatsApp desconectado. Gere o QR Code novamente em WhatsApp.");
-        throw new Error(`Falha ao enviar pelo WhatsApp: ${body?.error || r.status}`);
-      }
-    } else {
-      if (!s.phone_number_id || !s.access_token) throw new Error("WhatsApp não conectado. Conecte em WhatsApp (QR Code) ou configure a API oficial para avisar clientes.");
-      const r = await fetch(`https://graph.facebook.com/v20.0/${s.phone_number_id}/messages`, {
+    if (!s?.baileys_url) throw new Error("Extensão não conectada. Vá em Extensão e salve o endereço do seu app.");
+    let r: Response;
+    try {
+      r = await fetch(s.baileys_url, {
         method: "POST",
-        headers: { Authorization: `Bearer ${s.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body: message } }),
+        headers: { "Content-Type": "application/json", ...(s.baileys_token ? { Authorization: `Bearer ${s.baileys_token}` } : {}) },
+        body: JSON.stringify({ action: "appointment_notice", to, phone: to, message, appointment_id, client_name: name, date: appt.appointment_date, time: timeStr, service: appt.service, barber: appt.barber }),
+        signal: AbortSignal.timeout(10000),
       });
-      if (!r.ok) throw new Error("Falha ao enviar via Cloud API");
+    } catch {
+      throw new Error("Não foi possível falar com sua extensão. Confira o endereço em Extensão.");
     }
+    if (!r.ok) throw new Error(`A extensão recusou o envio (${r.status}).`);
 
     return new Response(JSON.stringify({ ok: true, phone: to }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
