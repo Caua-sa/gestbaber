@@ -26,7 +26,6 @@ import AdminServicos from "./pages/admin/AdminServicos";
 import AdminGanhosBarbeiros from "./pages/admin/AdminGanhosBarbeiros";
 import AdminInsumos from "./pages/admin/AdminInsumos";
 import AdminClientes from "./pages/admin/AdminClientes";
-import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
 import AdminExtensao from "./pages/admin/AdminExtensao";
 import AdminMarketing from "./pages/admin/AdminMarketing";
 import AdminNotificacoes from "./pages/admin/AdminNotificacoes";
