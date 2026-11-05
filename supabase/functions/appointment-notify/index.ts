@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         throw new Error(`Falha ao enviar pelo WhatsApp: ${body?.error || r.status}`);
       }
     } else {
-      if (!s.phone_number_id || !s.access_token) throw new Error("Meta Cloud API não configurada");
+      if (!s.phone_number_id || !s.access_token) throw new Error("WhatsApp não conectado. Conecte em WhatsApp (QR Code) ou configure a API oficial para avisar clientes.");
       const r = await fetch(`https://graph.facebook.com/v20.0/${s.phone_number_id}/messages`, {
         method: "POST",
         headers: { Authorization: `Bearer ${s.access_token}`, "Content-Type": "application/json" },
@@ -92,6 +92,6 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ ok: true, phone: to }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "erro" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "erro" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
