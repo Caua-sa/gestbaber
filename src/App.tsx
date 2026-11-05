@@ -112,7 +112,6 @@ const App = () => (
             <Route path="/admin/insumos" element={<ProtectedAdminRoute><AppLayout><EstoqueHub initial="insumos" /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/clientes" element={<ProtectedAdminRoute><AppLayout><AdminClientes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/extensao" element={<ProtectedAdminRoute><AppLayout><AdminExtensao /></AppLayout></ProtectedAdminRoute>} />
-            <Route path="/admin/whatsapp" element={<ProtectedAdminRoute><AppLayout><AdminWhatsApp /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/marketing" element={<ProtectedAdminRoute><AppLayout><AdminMarketing /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/admin/notificacoes" element={<ProtectedAdminRoute><AppLayout><AdminNotificacoes /></AppLayout></ProtectedAdminRoute>} />
             <Route path="/agendar/:slug" element={<AgendarRapido />} />
