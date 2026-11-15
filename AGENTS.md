@@ -4,3 +4,5 @@
 - Store site appearance on each barbershop and scope its CSS tokens to the public page wrapper; this keeps tenant branding out of the shared administrative theme.
 - Scope quick-booking contrast tokens and mobile action-bar styles to `.booking-flow` so booking controls stay readable without changing other public or admin pages.
 - Delete authentication accounts only through the Auth admin API after preserving administrative role holders; application data cleanup must not write managed auth tables.
+- Keep administrative home-screen metadata in a separate manifest selected by AppLayout so installation opens the agenda without changing public-shop installation metadata.
+- Manual appointment notices open a WhatsApp deep link from the click handler; never report delivery when only a compose window was opened.
