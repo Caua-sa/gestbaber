@@ -14,6 +14,7 @@ import { useAccountOwner } from "@/hooks/useAccountOwner";
 import { cn } from "@/lib/utils";
 import BookingServicePicker from "@/components/BookingServicePicker";
 import { getBookingCombo } from "@/lib/bookingCombo";
+import { getAppointmentWhatsAppLink } from "@/lib/appointmentWhatsApp";
 
 const TIME_SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"];
 
@@ -212,15 +213,14 @@ export default function Agendamento() {
     return () => { supabase.removeChannel(channel); };
   }, [ownerId, dateISO, soundOn]);
 
-  const notifyClient = async (app: Appointment) => {
-    const { data, error } = await supabase.functions.invoke("appointment-notify", {
-      body: { appointment_id: app.id },
-    });
-    if (error || (data as any)?.error) {
-      toast.error((data as any)?.error || error?.message || "Falha ao avisar");
+  const notifyClient = (app: Appointment, clientName: string, phone: string) => {
+    const link = getAppointmentWhatsAppLink({ phone, clientName, shopName: shopInfo?.name || "Barbearia", service: app.service, barber: app.barber, date: app.appointment_date, time: app.appointment_time, status: app.status });
+    if (!link) {
+      toast.error("Cadastre um telefone válido para avisar este cliente.");
       return;
     }
-    toast.success("Cliente avisado no WhatsApp");
+    window.open(link, "_blank", "noopener,noreferrer");
+    toast.info("Confira a mensagem e toque em enviar no WhatsApp.");
   };
 
 
@@ -664,7 +664,7 @@ export default function Agendamento() {
                           <UserPlus className="h-3.5 w-3.5" /> Salvar cliente
                         </Button>
                       )}
-                      {app.status !== "bloqueado" && <Button variant="outline" size="sm" onClick={() => notifyClient(app)} title="Avisar cliente no WhatsApp" className="h-8 gap-1.5">
+                      {app.status !== "bloqueado" && <Button variant="outline" size="sm" onClick={() => notifyClient(app, displayName, displayPhone)} title="Abrir WhatsApp para avisar cliente" className="h-8 gap-1.5">
                         <Bell className="h-3.5 w-3.5" /> Avisar
                       </Button>}
                       <Select value={app.status} onValueChange={(v) => handleStatusChange(app, v)}>
