@@ -25,6 +25,7 @@ export async function enableAdminPush(onNotification: (title: string) => void): 
   const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
   if (permission !== "granted") return "denied";
   const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?${new URLSearchParams(config)}`);
+  await navigator.serviceWorker.ready;
   const app = getApps().some((a) => a.name === "admin-push") ? getApp("admin-push") : initializeApp(config, "admin-push");
   const messaging = getMessaging(app);
   const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });

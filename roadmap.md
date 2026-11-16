@@ -1,7 +1,8 @@
 # Tasks
 - [x] Open WhatsApp with appointment details from the administrative Avisar action.
 - [x] Add separate administrative home-screen support and check persistent login on mobile.
-- [ ] Activate and verify real mobile browser push — button, protected device registration and appointment-triggered dispatch implemented; blocked by missing Firebase Include web push configuration.
+- [x] Configure Firebase web push and add protected device registration plus automatic appointment dispatch.
+- [ ] Verify delivery on the user's phone — requires allowing notifications on that device and creating a real appointment.
 - [x] Open WhatsApp Web directly on desktop and WhatsApp on mobile from Avisar (4 tests passed).
 - [x] Make /agendar buttons clearly visible and verify the booking steps on mobile and desktop.
 - [x] Redesign the public landing pages from the supplied reference, preserve shop data and links, and verify desktop/mobile.
