@@ -5,4 +5,5 @@
 - Scope quick-booking contrast tokens and mobile action-bar styles to `.booking-flow` so booking controls stay readable without changing other public or admin pages.
 - Delete authentication accounts only through the Auth admin API after preserving administrative role holders; application data cleanup must not write managed auth tables.
 - Keep administrative home-screen metadata in a separate manifest selected by AppLayout so installation opens the agenda without changing public-shop installation metadata.
-- Manual appointment notices open a WhatsApp deep link from the click handler; never report delivery when only a compose window was opened.
+- Manual appointment notices open WhatsApp Web on desktop and a WhatsApp deep link on mobile from the click handler; never report delivery when only a compose window was opened.
+- Queue browser push from appointment inserts and dispatch through Firebase server-side using per-job credentials; derive device shop access from protected roles and remove device registrations before sign-out.

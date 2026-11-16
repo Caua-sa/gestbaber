@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AdminMobileAccess } from "@/components/AdminMobileAccess";
+import { AdminPushNotifications } from "@/components/AdminPushNotifications";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 
@@ -17,6 +18,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <div className="flex items-center gap-1">
               <AdminMobileAccess />
+              <AdminPushNotifications />
               <NotificationBell />
               <ThemeToggle />
             </div>

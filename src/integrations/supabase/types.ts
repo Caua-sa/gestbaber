@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_push_devices: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      appointment_push_jobs: {
+        Row: {
+          appointment_id: string
+          completed_at: string | null
+          created_at: string
+          delivered_tokens: string[]
+          id: string
+          secret: string
+        }
+        Insert: {
+          appointment_id: string
+          completed_at?: string | null
+          created_at?: string
+          delivered_tokens?: string[]
+          id?: string
+          secret?: string
+        }
+        Update: {
+          appointment_id?: string
+          completed_at?: string | null
+          created_at?: string
+          delivered_tokens?: string[]
+          id?: string
+          secret?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           appointment_date: string

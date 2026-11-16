@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { unregisterAdminPush } from "@/lib/adminPush";
 
 interface AuthContextType {
   session: Session | null;
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    await unregisterAdminPush();
     await supabase.auth.signOut();
   };
 
