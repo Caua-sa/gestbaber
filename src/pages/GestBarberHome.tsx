@@ -135,7 +135,7 @@ export default function GestBarberHome() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">© {new Date().getFullYear()} GestBarber</footer>
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground"><span>© {new Date().getFullYear()} GestBarber</span><span className="mx-2">·</span><Link to="/admin/login" className="text-primary hover:underline">Login ADM</Link></footer>
     </div>
   );
 }
