@@ -5,8 +5,8 @@ const appointment = { phone: "(11) 99999-1234", clientName: "Ana", shopName: "Ba
 
 describe("Aviso de agendamento no WhatsApp", () => {
   it("abre a conversa com número brasileiro e detalhes do agendamento", () => {
-    const link = getAppointmentWhatsAppLink(appointment);
-    expect(link?.startsWith("https://wa.me/5511999991234?text=")).toBe(true);
+    const link = getAppointmentWhatsAppLink(appointment, false);
+    expect(link?.startsWith("https://web.whatsapp.com/send?phone=5511999991234&text=")).toBe(true);
     const text = new URL(link || "https://invalid.local").searchParams.get("text");
     expect(text).toContain("Corte + Barba");
     expect(text).toContain("16/11/2026");
@@ -15,6 +15,9 @@ describe("Aviso de agendamento no WhatsApp", () => {
   });
   it("não abre uma conversa sem telefone válido", () => {
     expect(getAppointmentWhatsAppLink({ ...appointment, phone: "" })).toBeNull();
+  });
+  it("abre o WhatsApp no celular com o mesmo número", () => {
+    expect(getAppointmentWhatsAppLink(appointment, true)?.startsWith("https://wa.me/5511999991234?text=")).toBe(true);
   });
   it("não informa confirmação para um agendamento cancelado", () => {
     const link = getAppointmentWhatsAppLink({ ...appointment, status: "cancelado" });
