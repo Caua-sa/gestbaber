@@ -25,9 +25,16 @@ export async function enableAdminPush(onNotification: (title: string) => void): 
   const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
   if (permission !== "granted") return "denied";
   const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?${new URLSearchParams(config)}`);
+  await navigator.serviceWorker.ready;
   const app = getApps().some((a) => a.name === "admin-push") ? getApp("admin-push") : initializeApp(config, "admin-push");
   const messaging = getMessaging(app);
-  const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+  let token: string;
+  try {
+    token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+  } catch (error) {
+    if (error instanceof Error && /permission|denied/i.test(error.message)) return "denied";
+    throw new Error("Não foi possível conectar as notificações deste navegador. Verifique a conexão e tente novamente no site publicado.");
+  }
   if (!token) return "denied";
   const { data, error } = await supabase.functions.invoke("admin-appointment-push", { body: { action: "register", token } });
   if (error || data?.error) throw new Error(data?.error || "Não foi possível ativar as notificações. Tente novamente.");
